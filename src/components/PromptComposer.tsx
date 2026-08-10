@@ -1,35 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { fillMissingBocetos } from "@/lib/fillBocetosClient";
 import { DEFAULT_PROMPT_PLACEHOLDER } from "@/lib/prompts";
 import { SEED_PROMPT } from "@/lib/seed";
 import { recoverStorageQuota } from "@/lib/storage";
 import { useStudioStore } from "@/lib/store";
 import type { Routine } from "@/lib/types";
 import { BrandMark } from "./BrandMark";
+import { HeroEnergy } from "./HeroEnergy";
+import { HeroThunder } from "./HeroThunder";
+import { Reveal } from "./Reveal";
 
 const COACH_STORAGE_KEY = "armatus-coach-name";
-
-function readSavedCoach(): string {
-  if (typeof window === "undefined") return "";
-  try {
-    recoverStorageQuota();
-  } catch {
-    /* ignore */
-  }
-  return localStorage.getItem(COACH_STORAGE_KEY) ?? "";
-}
 
 export function PromptComposer() {
   const router = useRouter();
   const setCurrent = useStudioStore((s) => s.setCurrent);
-  const [coachName, setCoachName] = useState(readSavedCoach);
+  // Always start empty so SSR + first client paint match (avoids stuck disabled button).
+  const [coachName, setCoachName] = useState("");
   const [prompt, setPrompt] = useState(SEED_PROMPT);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("Listo para generar");
+
+  useEffect(() => {
+    try {
+      recoverStorageQuota();
+    } catch {
+      /* ignore */
+    }
+    const saved = localStorage.getItem(COACH_STORAGE_KEY) ?? "";
+    if (saved) setCoachName(saved);
+  }, []);
 
   async function handleGenerate() {
     if (!prompt.trim() || busy) return;
@@ -59,7 +64,21 @@ export function PromptComposer() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo generar la rutina");
 
-      const routine = data.routine as Routine;
+      const draft = data.routine as Routine;
+      const needsBocetos = draft.exercises.some((ex) => !ex.imageDataUrl);
+      let routine = draft;
+      if (needsBocetos) {
+        setStatus("Generando bocetos ARMATUS…");
+        const filled = await fillMissingBocetos(null, draft, setStatus);
+        routine = filled.routine;
+        if (filled.failedNames.length > 0) {
+          console.warn(
+            "[generate] Bocetos fallidos:",
+            filled.failedNames.join(", "),
+          );
+        }
+      }
+
       await setCurrent(routine);
       setStatus("Rutina lista");
       router.push(`/rutina/${routine.id}`);
@@ -86,14 +105,17 @@ export function PromptComposer() {
   }
 
   return (
-    <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 py-8 sm:px-6">
-      <div className="mb-8">
+    <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col overflow-hidden px-4 py-8 sm:px-6">
+      <HeroEnergy intensity="compact" className="opacity-70" />
+      <HeroThunder className="opacity-55" />
+
+      <div className="relative z-[2] mb-8 motion-rise-1">
         <Link href="/" className="opacity-90 transition hover:opacity-100">
           <BrandMark size="compact" />
         </Link>
       </div>
 
-      <div className="motion-rise mb-6">
+      <div className="relative z-[2] motion-rise-2 mb-6">
         <div className="mb-2 text-[0.78rem] font-bold tracking-[0.22em] text-[var(--primary)] uppercase font-[family-name:var(--font-display)]">
           Prompt Composer
         </div>
@@ -107,7 +129,8 @@ export function PromptComposer() {
         </p>
       </div>
 
-      <div className="glass motion-rise-delay relative overflow-hidden rounded-[28px] p-4 sm:p-6">
+      <Reveal className="relative z-[2]">
+      <div className="glass relative overflow-hidden rounded-[28px] p-4 sm:p-6">
         <div
           className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-40"
           style={{
@@ -177,6 +200,7 @@ export function PromptComposer() {
           </div>
         )}
       </div>
+      </Reveal>
     </div>
   );
 }

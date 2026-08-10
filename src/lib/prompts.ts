@@ -2,6 +2,7 @@ import {
   buildVisualBrief,
   type BocetoPromptContext,
 } from "./bocetoBrief";
+import { ARMATUS_ATHLETE_LOCK } from "./bocetoCharacter";
 
 export type { BocetoPromptContext };
 
@@ -133,6 +134,10 @@ export function buildBocetoImagePrompt(ctx: BocetoPromptContext): string {
 
   return `ARMATUS Coach Studio — premium biomechanics boceto (technical neon line art).
 
+=== CHARACTER LOCK (same athlete as library references) ===
+${ARMATUS_ATHLETE_LOCK}
+If reference images are attached: they show THE SAME MAN in different exercises — match that character and art style exactly; only change pose + equipment for this exercise.
+
 === LOCKED BRIEF (do not improvise equipment) ===
 PRIMARY VARIATION: ${brief.primaryVariation}
 EQUIPMENT (mandatory): ${brief.equipment}
@@ -153,7 +158,7 @@ FORBIDDEN SUBSTITUTES: ${avoid || "any different machine or free-weight type"}
 6) Safe joints, clear hands with distinct fingers, readable silhouette, square centered composition.
 7) ZERO text, letters, numbers, labels, arrows with captions, watermarks, or logos in the image.
 
-Illustrate one decisive mid-rep coaching frame of PRIMARY VARIATION with EQUIPMENT exactly as locked.`;
+Illustrate one decisive mid-rep coaching frame of PRIMARY VARIATION with EQUIPMENT exactly as locked, featuring the SAME ARMATUS athlete from the references.`;
 }
 
 export const DEFAULT_PROMPT_PLACEHOLDER = `Cliente: Atleta

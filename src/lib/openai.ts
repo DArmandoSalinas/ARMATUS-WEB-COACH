@@ -119,7 +119,9 @@ export async function generateRoutineFromPrompt(
     );
   }
 
-  const withImages = await attachBocetos(exercises);
+  // Library paths only — AI bocetos are filled client-side to avoid
+  // Vercel response-size / timeout limits on multi-image generate.
+  const withLibrary = await attachBocetos(exercises, { libraryOnly: true });
 
   return {
     id: nanoid(12),
@@ -133,7 +135,7 @@ export async function generateRoutineFromPrompt(
     frequency: parsed.frequency?.trim() || "2× por semana",
     notes: parsed.notes?.trim() || undefined,
     sourcePrompt: prompt,
-    exercises: withImages,
+    exercises: withLibrary,
   };
 }
 

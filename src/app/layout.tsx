@@ -32,7 +32,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${barlow.variable} ${outfit.variable} h-full`}>
+    <html
+      lang="es"
+      data-scroll-behavior="smooth"
+      className={`${barlow.variable} ${outfit.variable} h-full`}
+    >
       <body className="relative min-h-full font-[family-name:var(--font-body)] antialiased">
         <Ambient />
         {children}

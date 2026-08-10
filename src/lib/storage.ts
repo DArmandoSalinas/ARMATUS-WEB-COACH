@@ -211,6 +211,7 @@ export function ensureSeedRoutine(): Routine {
     }
   }
 
+  let hasLegacyDataUrls = false;
   for (const id of Object.keys(map)) {
     const routine = map[id];
     if (!routine.coachName) {
@@ -220,13 +221,30 @@ export function ensureSeedRoutine(): Routine {
     for (const ex of routine.exercises) {
       if (isDataUrl(ex.imageDataUrl)) {
         dirty = true;
+        hasLegacyDataUrls = true;
         break;
       }
     }
   }
 
-  if (dirty) writeAllSync(map);
+  if (dirty) {
+    if (hasLegacyDataUrls) {
+      // Migrate base64 → IndexedDB before stripping localStorage
+      void migrateThenWrite(map);
+    } else {
+      writeAllSync(map);
+    }
+  }
   return map[SEED_ROUTINE_ID];
+}
+
+async function migrateThenWrite(map: Record<string, Routine>): Promise<void> {
+  try {
+    await Promise.all(Object.values(map).map((r) => persistImages(r)));
+  } catch (err) {
+    console.warn("[storage] migrate data URLs failed", err);
+  }
+  writeAllSync(map);
 }
 
 /** Clear bloated localStorage immediately (safe to call on app boot). */
@@ -238,7 +256,7 @@ export function recoverStorageQuota(): void {
     // Heuristic: anything over ~2MB almost certainly has base64 images
     if (raw.length > 2_000_000 || raw.includes("data:image")) {
       const parsed = JSON.parse(raw) as Record<string, Routine>;
-      writeAllSync(parsed);
+      void migrateThenWrite(parsed);
     }
   } catch {
     localStorage.removeItem(ROUTINES_KEY);

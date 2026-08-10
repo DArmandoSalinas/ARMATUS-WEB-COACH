@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Exercise, Routine } from "@/lib/types";
+import { fillMissingBocetos } from "@/lib/fillBocetosClient";
+import type { Routine } from "@/lib/types";
 
 const PLACEHOLDER = `Ejemplos:
 • Baja la intensidad a principiante y reduce series
@@ -14,62 +15,6 @@ type RevisionPanelProps = {
   routine: Routine;
   onRevised: (routine: Routine) => void | Promise<void>;
 };
-
-async function fillMissingBocetos(
-  previous: Routine,
-  revised: Routine,
-  onProgress: (msg: string) => void,
-): Promise<Routine> {
-  const prevById = new Map(previous.exercises.map((ex) => [ex.id, ex]));
-
-  const exercises: Exercise[] = [];
-  for (let i = 0; i < revised.exercises.length; i++) {
-    const ex = revised.exercises[i];
-    const prev = prevById.get(ex.id);
-    const canReuse =
-      !!prev?.imageDataUrl &&
-      prev.name.trim().toLowerCase() === ex.name.trim().toLowerCase() &&
-      prev.sketchCaption.trim().toLowerCase() ===
-        ex.sketchCaption.trim().toLowerCase();
-
-    if (canReuse) {
-      exercises.push({ ...ex, imageDataUrl: prev!.imageDataUrl });
-      continue;
-    }
-
-    if (ex.imageDataUrl) {
-      exercises.push(ex);
-      continue;
-    }
-
-    onProgress(`Generando boceto ${i + 1}/${revised.exercises.length}…`);
-    try {
-      const res = await fetch("/api/regenerate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          exercise: {
-            name: ex.name,
-            nameEn: ex.nameEn,
-            sketchCaption: ex.sketchCaption,
-            intro: ex.intro,
-            purpose: ex.purpose,
-            muscles: ex.muscles,
-            steps: ex.steps,
-            commonMistakes: ex.commonMistakes,
-          },
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error de boceto");
-      exercises.push({ ...ex, imageDataUrl: data.imageDataUrl as string });
-    } catch {
-      exercises.push(ex);
-    }
-  }
-
-  return { ...revised, exercises };
-}
 
 export function RevisionPanel({ routine, onRevised }: RevisionPanelProps) {
   const [prompt, setPrompt] = useState("");
@@ -110,7 +55,7 @@ export function RevisionPanel({ routine, onRevised }: RevisionPanelProps) {
       // Preserve coach name from current session
       revisedText.coachName = routine.coachName;
 
-      const withImages = await fillMissingBocetos(
+      const { routine: withImages, failedNames } = await fillMissingBocetos(
         routine,
         revisedText,
         setStatus,
@@ -118,7 +63,13 @@ export function RevisionPanel({ routine, onRevised }: RevisionPanelProps) {
 
       await onRevised(withImages);
       setPrompt("");
-      setStatus("Cambios aplicados");
+      if (failedNames.length > 0) {
+        setStatus(
+          `Cambios aplicados. ${failedNames.length} boceto(s) pendiente(s) — usa Generar en cada ejercicio.`,
+        );
+      } else {
+        setStatus("Cambios aplicados");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
       setStatus(null);

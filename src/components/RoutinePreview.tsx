@@ -6,6 +6,9 @@ import type { Exercise, Routine } from "@/lib/types";
 import { downloadRoutinePdf } from "@/lib/pdf/downloadPdf";
 import { useStudioStore } from "@/lib/store";
 import { ExerciseCard } from "./ExerciseCard";
+import { HeroEnergy } from "./HeroEnergy";
+import { HeroThunder } from "./HeroThunder";
+import { Reveal } from "./Reveal";
 import { RevisionPanel } from "./RevisionPanel";
 import "@/app/routine.css";
 
@@ -33,10 +36,14 @@ export function RoutinePreview({
   const removeExercise = useStudioStore((s) => s.removeExercise);
   const persist = useStudioStore((s) => s.persist);
   const setCurrent = useStudioStore((s) => s.setCurrent);
+  const storeError = useStudioStore((s) => s.error);
+  const setError = useStudioStore((s) => s.setError);
 
-  if (current?.id !== routine.id) {
-    useStudioStore.setState({ current: routine });
-  }
+  useEffect(() => {
+    if (current?.id !== routine.id) {
+      useStudioStore.setState({ current: routine });
+    }
+  }, [current?.id, routine]);
 
   const live = current?.id === routine.id ? current : routine;
 
@@ -198,7 +205,9 @@ export function RoutinePreview({
       </header>
 
       <section className="hero">
-        <div className="hero__grid">
+        <HeroEnergy intensity="compact" className="no-print opacity-60" />
+        <HeroThunder className="no-print opacity-50" />
+        <div className="hero__grid motion-rise-2">
           <div className="hero__eyebrow">Rutina para {live.clientName}</div>
           <h1 className="hero__title">
             {titleMain}
@@ -222,7 +231,7 @@ export function RoutinePreview({
             comunes y bocetos ARMATUS — listo para enviar al atleta.
           </p>
 
-          <div className="hero__actions no-print">
+          <div className="hero__actions no-print motion-rise-4">
             <a className="btn btn--primary" href={`#ex-${exercises[0]?.id}`}>
               Empezar rutina
             </a>
@@ -264,6 +273,21 @@ export function RoutinePreview({
           </div>
         </div>
       </section>
+
+      {editable && storeError && (
+        <div className="no-print mx-auto mb-4 max-w-[1100px] rounded-[14px] border border-[rgba(255,69,58,0.35)] bg-[rgba(255,69,58,0.1)] px-4 py-3 text-sm text-[#ffb4af]">
+          <div className="flex items-start justify-between gap-3">
+            <span>{storeError}</span>
+            <button
+              type="button"
+              className="shrink-0 text-[var(--primary-soft)] underline"
+              onClick={() => setError(null)}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
 
       {editable && (
         <div className="coach-toolbar no-print">
@@ -328,22 +352,23 @@ export function RoutinePreview({
 
       <main className="main">
         {exercises.map((ex, i) => (
-          <ExerciseCard
-            key={ex.id}
-            exercise={ex}
-            index={i}
-            editable={canEdit}
-            busy={busyMap[ex.id]}
-            isFirst={i === 0}
-            isLast={i === exercises.length - 1}
-            onChange={(patch) => updateExercise(ex.id, patch)}
-            onReorder={(dir) => reorderExercise(ex.id, dir)}
-            onRegenerateText={() => regenText(ex)}
-            onRegenerateImage={() => regenImage(ex)}
-            onRemove={() => {
-              if (confirm(`¿Eliminar ${ex.name}?`)) removeExercise(ex.id);
-            }}
-          />
+          <Reveal key={ex.id} className="mb-0">
+            <ExerciseCard
+              exercise={ex}
+              index={i}
+              editable={canEdit}
+              busy={busyMap[ex.id]}
+              isFirst={i === 0}
+              isLast={i === exercises.length - 1}
+              onChange={(patch) => updateExercise(ex.id, patch)}
+              onReorder={(dir) => reorderExercise(ex.id, dir)}
+              onRegenerateText={() => regenText(ex)}
+              onRegenerateImage={() => regenImage(ex)}
+              onRemove={() => {
+                if (confirm(`¿Eliminar ${ex.name}?`)) removeExercise(ex.id);
+              }}
+            />
+          </Reveal>
         ))}
       </main>
 

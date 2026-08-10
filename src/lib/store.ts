@@ -31,12 +31,21 @@ function reindex(exercises: Exercise[]): Exercise[] {
   return exercises.map((ex, i) => ({ ...ex, order: i }));
 }
 
-async function persistSafe(routine: Routine) {
+async function persistSafe(
+  routine: Routine,
+  set: (partial: Partial<StudioState>) => void,
+) {
   try {
     await saveRoutine(routine);
   } catch (err) {
     console.error("[storage]", err);
-    // Still keep in memory even if disk fails
+    const message =
+      err instanceof Error
+        ? err.message
+        : "No se pudo guardar la rutina en este navegador.";
+    set({
+      error: `Guardado incompleto: ${message}. La rutina sigue en pantalla; no cierres la pestaña.`,
+    });
   }
 }
 
@@ -62,15 +71,15 @@ export const useStudioStore = create<StudioState>((set, get) => ({
 
   setCurrent: async (routine) => {
     set({ current: routine, error: null });
-    await persistSafe(routine);
+    await persistSafe(routine, set);
   },
 
   persist: async () => {
     const { current } = get();
     if (!current) return;
     const next = { ...current, updatedAt: new Date().toISOString() };
-    set({ current: next });
-    await persistSafe(next);
+    set({ current: next, error: null });
+    await persistSafe(next, set);
   },
 
   updateExercise: (exerciseId, patch) => {
@@ -85,7 +94,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set({ current: next });
-    void persistSafe(next);
+    void persistSafe(next, set);
   },
 
   replaceExercise: (exerciseId, nextEx) => {
@@ -100,7 +109,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set({ current: next });
-    void persistSafe(next);
+    void persistSafe(next, set);
   },
 
   reorderExercise: (exerciseId, direction) => {
@@ -118,7 +127,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set({ current: next });
-    void persistSafe(next);
+    void persistSafe(next, set);
   },
 
   removeExercise: (exerciseId) => {
@@ -133,7 +142,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set({ current: next });
-    void persistSafe(next);
+    void persistSafe(next, set);
   },
 
   setGenerating: (v) => set({ generating: v }),

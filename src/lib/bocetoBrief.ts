@@ -73,13 +73,37 @@ function detectEquipment(text: string): {
     };
   }
   if (
-    /\b(cable\s*(chest\s*)?fly|crossover|cruces?\s+en\s+polea|aperturas?\s+en\s+polea)\b/i.test(
+    /\b(cable\s*(chest\s*)?fly|crossover|cruces?\s+(en|de)\s+poleas?|aperturas?\s+(en|de)\s+poleas?|cruce\s+de\s+poleas?)\b/i.test(
       t,
     )
   ) {
     return {
-      equipment: "dual high cable towers with D-handles (standing cable fly)",
-      forbid: ["pec deck machine", "dumbbells", "barbell"],
+      equipment: "dual high cable towers with D-handles (standing cable fly / cruce de poleas)",
+      forbid: ["pec deck machine", "dumbbells", "barbell", "seated fly machine"],
+    };
+  }
+  if (/\b(dips?|fondos?\s+en\s+paralelas?|paralelas?)\b/i.test(t)) {
+    return {
+      equipment: "parallel dip bars / paralelas (bodyweight dips)",
+      forbid: ["bench dips only", "cable pushdown", "machine dip unless named"],
+    };
+  }
+  if (/\bpress\s+inclinado\b/i.test(t) && /\b(mancuernas?|dumbbells?)\b/i.test(t)) {
+    return {
+      equipment: "incline bench + two dumbbells (incline dumbbell press)",
+      forbid: ["flat barbell bench", "cable press", "smith machine unless named"],
+    };
+  }
+  if (/\bpress\s+de\s+banca\b/i.test(t) || /\bpress\s*banca\b/i.test(t)) {
+    if (/\b(mancuernas?|dumbbells?)\b/i.test(t)) {
+      return {
+        equipment: "flat bench + two dumbbells",
+        forbid: ["barbell", "cable crossover", "pec deck"],
+      };
+    }
+    return {
+      equipment: "flat bench + barbell with plates (bench press)",
+      forbid: ["dumbbells", "cable fly", "pec deck"],
     };
   }
   if (

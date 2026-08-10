@@ -677,10 +677,11 @@ const RULES: BocetoRule[] = [
     key: 'chestfly',
     patterns: [
       /\bcable\s*(chest\s*)?flye?s?\b/i,
-      /\bcruces?\s+en\s+polea\b/i,
-      /\baperturas?\s+en\s+polea\b/i,
+      /\bcruces?\s+(en|de)\s+poleas?\b/i,
+      /\baperturas?\s+(en|de)\s+poleas?\b/i,
       /\bcrossover\b/i,
       /\bcable\s*crossover\b/i,
+      /\bcruce\s+de\s+poleas?\b/i,
     ],
   },
   {
