@@ -1,18 +1,31 @@
 import fs from "node:fs";
 import path from "node:path";
 import { toFile } from "openai";
-import { CHARACTER_REFERENCE_FILES } from "./bocetoCharacter";
+import {
+  CHARACTER_REFERENCE_FILES,
+  SAFE_CHARACTER_REFERENCE_FILES,
+} from "./bocetoCharacter";
+import {
+  shouldExcludeBarbellReferences,
+  type VisualBrief,
+} from "./bocetoBrief";
 
-export function characterReferencePaths(): string[] {
+function pathsForFiles(files: readonly string[]): string[] {
   const dir = path.join(process.cwd(), "public", "bocetos");
-  return CHARACTER_REFERENCE_FILES.map((f) => path.join(dir, f)).filter((p) =>
-    fs.existsSync(p),
-  );
+  return files.map((f) => path.join(dir, f)).filter((p) => fs.existsSync(p));
+}
+
+export function characterReferencePaths(brief?: VisualBrief): string[] {
+  const files =
+    brief && shouldExcludeBarbellReferences(brief)
+      ? SAFE_CHARACTER_REFERENCE_FILES
+      : CHARACTER_REFERENCE_FILES;
+  return pathsForFiles(files);
 }
 
 /** OpenAI uploadable Files for images.edit (character consistency). */
-export async function loadCharacterReferenceFiles() {
-  const paths = characterReferencePaths();
+export async function loadCharacterReferenceFiles(brief?: VisualBrief) {
+  const paths = characterReferencePaths(brief);
   const files = await Promise.all(
     paths.map(async (p) => {
       const buf = fs.readFileSync(p);
@@ -23,8 +36,8 @@ export async function loadCharacterReferenceFiles() {
 }
 
 /** Data URLs for fal / other providers that want image_urls. */
-export function characterReferenceDataUrls(): string[] {
-  return characterReferencePaths().map((p) => {
+export function characterReferenceDataUrls(brief?: VisualBrief): string[] {
+  return characterReferencePaths(brief).map((p) => {
     const buf = fs.readFileSync(p);
     return `data:image/jpeg;base64,${buf.toString("base64")}`;
   });

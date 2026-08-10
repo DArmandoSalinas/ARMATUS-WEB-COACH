@@ -13,6 +13,13 @@ Keep face/hair/body proportions consistent with the references while changing ON
 /** Best multi-angle character/style anchors from the existing library. */
 export const CHARACTER_REFERENCE_FILES = [
   "squat.jpg", // 3/4 rear standing
-  "bench.jpg", // side profile lying
+  "bench.jpg", // side profile lying (BARBELL — exclude when target is DB/band)
   "pullup.jpg", // rear hanging
+] as const;
+
+/** Safe standing anchors when barbell refs would contaminate equipment. */
+export const SAFE_CHARACTER_REFERENCE_FILES = [
+  "squat.jpg",
+  "pullup.jpg",
+  "pushup.jpg",
 ] as const;

@@ -4,7 +4,10 @@ import {
   resolveBocetoKey,
   resolveBocetoPath,
 } from "./bocetoMatch";
-import type { BocetoPromptContext } from "./bocetoBrief";
+import {
+  buildVisualBrief,
+  type BocetoPromptContext,
+} from "./bocetoBrief";
 import {
   characterReferenceDataUrls,
   loadCharacterReferenceFiles,
@@ -150,19 +153,24 @@ export async function attachBocetos(
 
 async function generateAiBoceto(ctx: BocetoPromptContext): Promise<string> {
   const client = openaiClient();
+  const brief = buildVisualBrief(ctx);
   const prompt = buildBocetoImagePrompt(ctx);
 
   // Prefer OpenAI edit-with-refs (same library athlete). fal is fallback only.
+  // Drop barbell refs (bench.jpg) when the target is dumbbells/bands.
   if (client) {
     try {
-      const refs = await loadCharacterReferenceFiles();
+      const refs = await loadCharacterReferenceFiles(brief);
       if (refs.length > 0) {
         const edited = await client.images.edit({
           model: "gpt-image-1",
           image: refs,
           prompt: `${prompt}
 
-REFERENCE IMAGES: the attached bocetos are the official ARMATUS athlete in different lifts. Keep THAT exact man (hair, face shape, body, shorts/sneakers style) and the same white/orange-on-black line-art language. Do not invent a new character. EQUIPMENT must match the brief exactly (barbell ≠ dumbbell).`,
+REFERENCE IMAGES = CHARACTER + ART STYLE ONLY.
+Keep THAT exact man (hair, face, body, shorts/sneakers) and white/orange-on-black line art.
+Do NOT copy equipment from the references. Locked equipment: ${brief.equipment}
+Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
           // Landscape matches library bocetos (~3:2) and sketch UI
           size: "1536x1024",
           quality: "high",
@@ -245,10 +253,11 @@ async function generateWithFal(
   falKey: string,
   ctx: BocetoPromptContext,
 ): Promise<string> {
-  const refs = characterReferenceDataUrls();
+  const brief = buildVisualBrief(ctx);
+  const refs = characterReferenceDataUrls(brief);
   const prompt = `${buildBocetoImagePrompt(ctx)}
 
-Reference style + SAME athlete as ARMATUS library bocetos — neon dual-line art, white primary strokes with molten orange (#FF6B35) accents on pure black.`;
+Reference style + SAME athlete as ARMATUS library bocetos — neon dual-line art, white primary strokes with molten orange (#FF6B35) accents on pure black. Ignore equipment in the reference; use locked equipment only.`;
 
   // Image-to-image when we have a character anchor; else plain Flux
   const endpoint = refs[0]

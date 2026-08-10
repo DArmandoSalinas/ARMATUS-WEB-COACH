@@ -20,6 +20,8 @@ export type VisualBrief = {
   laterality: "bilateral" | "unilateral-left-or-right" | "unknown";
   /** Body position */
   bodyPosition: string;
+  /** Short hard lock line for the image model */
+  equipmentLockLine: string;
 };
 
 function blob(ctx: BocetoPromptContext): string {
@@ -38,9 +40,20 @@ function blob(ctx: BocetoPromptContext): string {
 /** Prefer the first option when the coach wrote "A o B" / "A or B". */
 function pickPrimaryName(name: string, nameEn?: string | null): string {
   const raw = `${name}${nameEn ? ` (${nameEn})` : ""}`;
-  // Split on Spanish/English "or" between alternatives (keep parentheses content of first)
   const first = raw.split(/\s+o\s+|\s+or\s+|\s+\/\s+/i)[0]?.trim() || raw;
   return first.replace(/\s+/g, " ").trim();
+}
+
+function hasDumbbell(t: string): boolean {
+  return /\b(mancuernas?|dumbbells?|\bdb\b)\b/i.test(t);
+}
+
+function hasBarbell(t: string): boolean {
+  return /\b(barra|barbell|olympic\s*bar)\b/i.test(t);
+}
+
+function hasBand(t: string): boolean {
+  return /\b(banda|band|liga|ligas|theraband|elastic[oa]?s?)\b/i.test(t);
 }
 
 function detectEquipment(text: string): {
@@ -48,6 +61,44 @@ function detectEquipment(text: string): {
   forbid: string[];
 } {
   const t = text;
+
+  // --- Shoulder IR / ER (warm-up default = resistance band) ---
+  if (
+    /\b(rotaci[oó]n\s+(externa|interna)|external\s*rotation|internal\s*rotation|rotator\s*cuff|manguito\s+rotador)\b/i.test(
+      t,
+    )
+  ) {
+    const isInternal = /\b(interna|internal)\b/i.test(t);
+    const isExternal = /\b(externa|external)\b/i.test(t);
+    const motion = isInternal
+      ? "internal rotation"
+      : isExternal
+        ? "external rotation"
+        : "rotation";
+    if (hasDumbbell(t) && !hasBand(t)) {
+      return {
+        equipment: `ONE light dumbbell for side-lying or standing ${motion} (elbow glued at 90°)`,
+        forbid: [
+          "barbell",
+          "cable stack",
+          "two dumbbells",
+          "bench press setup",
+        ],
+      };
+    }
+    // Default + band: standing band IR/ER
+    return {
+      equipment: `resistance band / liga elástica for standing ${motion}: elbow flexed 90°, upper arm pinned to the side of the torso, band providing rotational resistance — NO dumbbell, NO barbell, NOT side-lying unless the title says tumbado/sidelying`,
+      forbid: [
+        "dumbbell",
+        "mancuerna",
+        "barbell",
+        "cable stack",
+        "side-lying dumbbell external rotation",
+        "bench press",
+      ],
+    };
+  }
 
   // Order: most specific first
   if (/\bpec\s*deck\b/i.test(t) || /\bfly\s*machine\b/i.test(t)) {
@@ -78,7 +129,8 @@ function detectEquipment(text: string): {
     )
   ) {
     return {
-      equipment: "dual high cable towers with D-handles (standing cable fly / cruce de poleas)",
+      equipment:
+        "dual high cable towers with D-handles (standing cable fly / cruce de poleas)",
       forbid: ["pec deck machine", "dumbbells", "barbell", "seated fly machine"],
     };
   }
@@ -88,17 +140,85 @@ function detectEquipment(text: string): {
       forbid: ["bench dips only", "cable pushdown", "machine dip unless named"],
     };
   }
-  if (/\bpress\s+inclinado\b/i.test(t) && /\b(mancuernas?|dumbbells?)\b/i.test(t)) {
+
+  // Dumbbell chest / bench press (must beat generic "bench press" heuristics)
+  if (
+    (/\b(press\s+de\s+pecho|press\s+pecho|chest\s*press|bench\s*press|press\s+de\s+banca|press\s*banca)\b/i.test(
+      t,
+    ) ||
+      /\b(dumbbell\s+bench|db\s+bench)\b/i.test(t)) &&
+    hasDumbbell(t)
+  ) {
     return {
-      equipment: "incline bench + two dumbbells (incline dumbbell press)",
-      forbid: ["flat barbell bench", "cable press", "smith machine unless named"],
+      equipment:
+        "FLAT BENCH + TWO SEPARATE DUMBBELLS (one in each hand). Hands hold dumbbell handles vertically above the chest. There is NO barbell, NO olympic bar, NO weight plates on a single bar connecting the hands.",
+      forbid: [
+        "barbell",
+        "olympic bar",
+        "single long bar",
+        "barbell bench press",
+        "cable press",
+        "smith machine",
+        "one continuous bar across both hands",
+      ],
     };
   }
+
+  if (/\bpress\s+inclinado\b/i.test(t) && hasDumbbell(t)) {
+    return {
+      equipment:
+        "incline bench + TWO separate dumbbells (incline dumbbell press) — NOT a barbell",
+      forbid: [
+        "flat barbell bench",
+        "barbell",
+        "olympic bar",
+        "cable press",
+        "smith machine",
+      ],
+    };
+  }
+
+  if (
+    /\b(press\s+de\s+hombro|shoulder\s*press|overhead\s*press|press\s*militar|military\s*press|ohp)\b/i.test(
+      t,
+    ) &&
+    hasDumbbell(t)
+  ) {
+    return {
+      equipment:
+        "TWO separate dumbbells pressed overhead (standing or seated as named) — each hand holds its own dumbbell. NO barbell.",
+      forbid: [
+        "barbell",
+        "olympic bar",
+        "military barbell press",
+        "push press with bar",
+        "single bar connecting both hands",
+      ],
+    };
+  }
+
+  if (
+    /\b(sentadilla|squat)\b/i.test(t) &&
+    hasDumbbell(t) &&
+    !hasBarbell(t)
+  ) {
+    return {
+      equipment:
+        "ONE or TWO dumbbells for the squat (goblet at chest or dumbbells at sides) — NEVER a barbell on the back",
+      forbid: [
+        "barbell back squat",
+        "olympic bar on traps",
+        "safety bar",
+        "smith machine",
+      ],
+    };
+  }
+
   if (/\bpress\s+de\s+banca\b/i.test(t) || /\bpress\s*banca\b/i.test(t)) {
-    if (/\b(mancuernas?|dumbbells?)\b/i.test(t)) {
+    if (hasDumbbell(t)) {
       return {
-        equipment: "flat bench + two dumbbells",
-        forbid: ["barbell", "cable crossover", "pec deck"],
+        equipment: "flat bench + two separate dumbbells",
+        forbid: ["barbell", "olympic bar", "cable crossover", "pec deck"],
       };
     }
     return {
@@ -144,13 +264,22 @@ function detectEquipment(text: string): {
       forbid: ["barbell", "two-hand barbell row", "cable row", "T-bar"],
     };
   }
-  if (/\b(mancuernas?|dumbbells?)\b/i.test(t) && !/\bbarra|barbell\b/i.test(t)) {
+
+  if (hasBand(t)) {
     return {
-      equipment: "dumbbell(s) only — no barbell, no cable stack unless named",
-      forbid: ["barbell", "olympic bar"],
+      equipment: "resistance band / liga elástica as named (visible band tension)",
+      forbid: ["dumbbell", "barbell", "cable stack unless also named"],
     };
   }
-  if (/\b(barra|barbell)\b/i.test(t) && !/\bmancuerna|dumbbell\b/i.test(t)) {
+
+  if (hasDumbbell(t) && !hasBarbell(t)) {
+    return {
+      equipment:
+        "dumbbell(s) only — draw separate dumbbell handles in each working hand. NEVER a single barbell connecting both hands.",
+      forbid: ["barbell", "olympic bar", "single long bar", "cable stack"],
+    };
+  }
+  if (hasBarbell(t) && !hasDumbbell(t)) {
     return {
       equipment: "barbell with plates",
       forbid: ["dumbbells", "cable handles"],
@@ -162,12 +291,6 @@ function detectEquipment(text: string): {
       forbid: ["substituting free weights when cables are specified"],
     };
   }
-  if (/\b(banda|band)\b/i.test(t)) {
-    return {
-      equipment: "resistance band",
-      forbid: ["cable stack", "machines", "barbell"],
-    };
-  }
 
   return {
     equipment: "exactly the implement named in the exercise title",
@@ -175,11 +298,9 @@ function detectEquipment(text: string): {
   };
 }
 
-function detectLaterality(
-  text: string,
-): VisualBrief["laterality"] {
+function detectLaterality(text: string): VisualBrief["laterality"] {
   if (
-    /\b(una\s+mano|single[- ]?arm|one[- ]?arm|unilateral|unipodal|una\s+pierna|single[- ]?leg)\b/i.test(
+    /\b(una\s+mano|single[- ]?arm|one[- ]?arm|unilateral|unipodal|una\s+pierna|single[- ]?leg|por\s+lado|per\s+side)\b/i.test(
       text,
     )
   ) {
@@ -189,12 +310,22 @@ function detectLaterality(
 }
 
 function detectBodyPosition(text: string): string {
+  if (
+    /\b(rotaci[oó]n\s+(externa|interna)|external\s*rotation|internal\s*rotation)\b/i.test(
+      text,
+    ) &&
+    !/\b(tumbado|side[\s-]?lying|sidelying)\b/i.test(text)
+  ) {
+    return "standing, elbow at side at 90°";
+  }
   if (/\b(sentado|seated|pec\s*deck)\b/i.test(text)) return "seated";
-  if (/\b(tumbado|lying|supine|banco\s+plano|flat\s*bench)\b/i.test(text))
-    return "lying on bench";
+  if (/\b(tumbado|lying|supine|banco\s+plano|flat\s*bench|side[\s-]?lying)\b/i.test(text))
+    return "lying on bench / as named";
   if (/\b(inclinado|incline)\b/i.test(text)) return "incline bench";
   if (/\b(cuadrupedia|quadruped|bird\s*dog)\b/i.test(text)) return "quadruped";
   if (/\b(de\s+pie|standing)\b/i.test(text)) return "standing";
+  if (/\b(press\s+de\s+pecho|bench\s*press|chest\s*press)\b/i.test(text))
+    return "lying supine on flat bench";
   return "as required by the named exercise";
 }
 
@@ -206,11 +337,25 @@ export function buildVisualBrief(ctx: BocetoPromptContext): VisualBrief {
   const primaryVariation = pickPrimaryName(ctx.name, ctx.nameEn);
   const text = `${primaryVariation}\n${blob(ctx)}`;
   const { equipment, forbid } = detectEquipment(text);
+  const bodyPosition = detectBodyPosition(text);
   return {
     primaryVariation,
     equipment,
     forbidEquipment: forbid,
     laterality: detectLaterality(text),
-    bodyPosition: detectBodyPosition(text),
+    bodyPosition,
+    equipmentLockLine: `DRAW ONLY: ${equipment}. DO NOT DRAW: ${forbid.join(", ") || "any other implement"}.`,
   };
+}
+
+/** True when refs that depict a barbell (e.g. bench.jpg) would contaminate the edit. */
+export function shouldExcludeBarbellReferences(brief: VisualBrief): boolean {
+  const e = `${brief.equipment} ${brief.forbidEquipment.join(" ")}`.toLowerCase();
+  return (
+    e.includes("dumbbell") ||
+    e.includes("mancuerna") ||
+    e.includes("band") ||
+    e.includes("liga") ||
+    brief.forbidEquipment.some((f) => /barbell|olympic/i.test(f))
+  );
 }

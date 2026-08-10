@@ -16,13 +16,27 @@ Reglas de contenido:
 - Sin emojis. Sin marketing genérico. Sin relleno.
 - Dosificación realista según nivel (principiante / intermedio / avanzado).
 - Cada ejercicio necesita: badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
-- intro / purpose / benefit: un poco más largos y específicos (2–4 frases) con biomecánica real — se usan también para generar el boceto.
-- sketchCaption: 1–2 frases EN ESPAÑOL con UNA sola variación (si el nombre dice "A o B", elige A): equipo exacto, pose, ángulo, músculos a resaltar y qué NO dibujar (ej. "pec deck sentado con almohadillas; NO poleas ni mancuernas"). Sin la palabra "Boceto".
-- supportLinks (Apoyo adicional):
-  1) Si el prompt del coach incluye URLs de YouTube junto a un ejercicio, asígnalas a ESE ejercicio (label corto en español, ej. "Video de movilidad").
+- intro / purpose / benefit: un poco más largos y específicos (2–4 frases) con biomecánica real — se usan también para generar el boceto. Menciona SIEMPRE el equipo exacto (mancuernas / barra / liga elástica / peso corporal).
+- sketchCaption: 1–2 frases EN ESPAÑOL con UNA sola variación (si el nombre dice "A o B", elige A): equipo exacto, pose, ángulo, músculos a resaltar y qué NO dibujar (ej. "press en banco plano con DOS mancuernas; NO barra olímpica"). Sin la palabra "Boceto".
+
+ESTRUCTURA / CALENTAMIENTO (crítico — no colapses listas):
+- Si el prompt tiene sección CALENTAMIENTO y BLOQUE PRINCIPAL (u otra división), respétala.
+- Cada ítem numerado del calentamiento = UN ejercicio separado en el array. NUNCA fusiones varios ítems en uno solo.
+- Si un ítem de calentamiento trae sub-viñetas (guiones) con movimientos distintos (ej. piernas de un lado a otro / abducciones / desplantes), crea UN ejercicio por cada sub-viñeta. Nombres claros, ej. "Movilidad de cadera — Abducciones".
+- badge de calentamiento: "Calentamiento · 01", "Calentamiento · 02", … (no uses "Bloque principal" ahí).
+- badge del bloque principal: "Bloque principal · 01", …
+- Orden: primero todos los de calentamiento (en orden), luego el bloque principal.
+
+EQUIPO POR DEFECTO (salvo que el prompt diga otra cosa):
+- Rotación externa / interna de hombro en calentamiento → CON LIGA ELÁSTICA / banda de resistencia, de pie, codo a 90° pegado al costado. Nombre debe incluir "con liga" o "con banda". Explica biomecánica del manguito rotador con banda (no mancuerna, no tumbado sidelying salvo que el coach lo pida).
+- "Press de pecho/hombro/sentadilla con mancuerna(s)" → mancuernas separadas, NUNCA barra.
+- Lagartijas → peso corporal (push-up).
+
+supportLinks (Apoyo adicional):
+  1) Si el prompt del coach incluye URLs de YouTube junto a un ejercicio, asígnalas a ESE ejercicio (label corto en español, ej. "Video de movilidad"). Si un video aplica a un grupo de sub-viñetas del mismo ítem, puedes repetir el mismo URL en cada sub-ejercicio.
   2) Si no hay URL en el prompt, incluye 1 link de búsqueda de YouTube con query preciso del ejercicio + equipo exacto, forma:
      https://www.youtube.com/results?search_query=...
-     (usa encode mentalmente: espacios como +). Label: "Buscar técnica en YouTube".
+     Label: "Buscar técnica en YouTube".
   3) NUNCA inventes IDs de videos (watch?v=XXXX / shorts/XXXX). Solo URLs del prompt o /results?search_query=.
 
 Responde SOLO con JSON válido (sin markdown) con esta forma exacta:
@@ -59,13 +73,15 @@ Aplica SOLO lo que pide. Conserva lo demás (tono, estructura, calidad biomecán
 Reglas:
 - Español profesional. Sin emojis.
 - Puedes editar, reordenar, añadir o quitar ejercicios según el pedido.
+- Si pide expandir calentamiento o separar sub-movimientos, crea ejercicios separados (badge "Calentamiento · NN").
+- Rotación de hombro en calentamiento = liga/banda elástica de pie salvo indicación contraria; marca needsNewImage si el boceto/equipo anterior era mancuerna o barra.
 - Si pide cambios de dosificación, nivel, objetivo o cliente, actualízalos.
 - Mantén el campo "id" de cada ejercicio que conserves (para no regenerar bocetos innecesarios).
 - Ejercicios NUEVOS: id = null.
 - Cada ejercicio necesita: id, name, nameEn, badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
-- sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y restricciones visuales (ej. "NO tras nuca").
+- sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y restricciones visuales (ej. "DOS mancuernas; NO barra").
 - Conserva supportLinks existentes salvo que el pedido los cambie; para ejercicios nuevos aplica las mismas reglas de YouTube (URLs del prompt o search_query; nunca inventes watch?v=).
-- Marca "needsNewImage": true solo si el ejercicio es nuevo o cambió tanto que el boceto anterior ya no aplica (incluye cambio de equipo: barra ≠ mancuernas).
+- Marca "needsNewImage": true solo si el ejercicio es nuevo o cambió tanto que el boceto anterior ya no aplica (incluye cambio de equipo: barra ≠ mancuernas ≠ liga).
 
 Responde SOLO JSON válido:
 {
@@ -98,7 +114,9 @@ Responde SOLO JSON válido:
 export const REGEN_TEXT_SYSTEM_PROMPT = `Eres la voz técnica del Coach Studio de ARMATUS.
 
 Regenera SOLO el contenido de coaching de UN ejercicio en español profesional (biomecánica, errores, beneficio). Mantén el nombre del ejercicio salvo que el contexto pida cambiarlo.
-intro/purpose/benefit un poco más específicos. sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y qué NO dibujar.
+intro/purpose/benefit un poco más específicos y deben nombrar el equipo exacto.
+sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y qué NO dibujar (ej. "liga elástica de pie; NO mancuerna").
+Si es rotación de hombro de calentamiento sin otro equipo indicado → liga/banda elástica de pie.
 
 Conserva o regenera supportLinks (YouTube del contexto o search_query; nunca inventes watch?v=).
 Sin emojis. Responde SOLO JSON válido:
@@ -133,53 +151,70 @@ export function buildBocetoImagePrompt(ctx: BocetoPromptContext): string {
   const muscles =
     (ctx.muscles || []).slice(0, 6).join(", ") || "primary movers from the brief";
   const cues = (ctx.steps || [])
-    .slice(0, 3)
-    .map((s) => `${s.title}: ${clipPrompt(s.body, 110)}`)
+    .slice(0, 4)
+    .map((s) => `${s.title}: ${clipPrompt(s.body, 140)}`)
     .join(" | ");
   const avoid = [
     ...brief.forbidEquipment,
-    ...(ctx.commonMistakes || []).slice(0, 2).map((m) => clipPrompt(m, 80)),
+    ...(ctx.commonMistakes || []).slice(0, 3).map((m) => clipPrompt(m, 90)),
   ]
     .filter(Boolean)
     .join("; ");
 
   return `ARMATUS Coach Studio — premium biomechanics boceto (technical neon line art).
 
-=== CHARACTER LOCK (same athlete as library references) ===
+=== CHARACTER ONLY (ignore equipment in references) ===
 ${ARMATUS_ATHLETE_LOCK}
-If reference images are attached: they show THE SAME MAN in different exercises — match that character and art style exactly; only change pose + equipment for this exercise.
+If reference images are attached: use them ONLY for the athlete's face, hair, body proportions, shorts/sneakers, and white/orange-on-black line style.
+CRITICAL: IGNORE any barbell, plates, cables, or machines visible in the references. Replace equipment with the LOCKED EQUIPMENT below. References must NOT dictate the implement.
 
-=== LOCKED BRIEF (do not improvise equipment) ===
+=== LOCKED EQUIPMENT (hard fail if wrong) ===
+${brief.equipmentLockLine}
 PRIMARY VARIATION: ${brief.primaryVariation}
-EQUIPMENT (mandatory): ${brief.equipment}
 BODY POSITION: ${brief.bodyPosition}
 LATERALITY: ${brief.laterality}
-COACH CAPTION: ${clipPrompt(ctx.sketchCaption, 260)}
-BIOMECHANICS: ${clipPrompt(ctx.purpose || ctx.intro, 240)}
-ACTIVE MUSCLES (draw glowing orange fiber accents on these): ${muscles}
-TECHNIQUE CUES: ${cues || clipPrompt(ctx.intro, 160)}
-FORBIDDEN SUBSTITUTES: ${avoid || "any different machine or free-weight type"}
+
+=== COACHING CONTEXT (pose must match this explanation) ===
+TITLE: ${clipPrompt(ctx.name, 120)}${ctx.nameEn ? ` / ${clipPrompt(ctx.nameEn, 80)}` : ""}
+CAPTION: ${clipPrompt(ctx.sketchCaption, 280)}
+INTRO: ${clipPrompt(ctx.intro, 280)}
+PURPOSE: ${clipPrompt(ctx.purpose, 280)}
+ACTIVE MUSCLES (orange fiber glow): ${muscles}
+TECHNIQUE STEPS: ${cues || clipPrompt(ctx.intro, 200)}
+FORBIDDEN: ${avoid || "any different machine or free-weight type"}
 
 === NON-NEGOTIABLE VISUAL RULES ===
-1) Exact equipment match. Pec deck ≠ cable crossover ≠ dumbbell fly. Barbell ≠ dumbbell. Single-arm ≠ two-hand. If EQUIPMENT says dumbbells, draw two dumbbells — never a barbell.
-2) If the title offered "A or B", illustrate ONLY the primary variation above — never a mashup.
-3) UPPER BODY SHIRTLESS — no tank, no t-shirt, no hoodie. Bare torso so anatomy reads clearly. Athletic shorts + sneakers only. Non-sexual, coaching-anatomical, adult athlete.
-4) ACTIVATION GLOW: molten orange (#FF6B35) accent lines along the fibers of the working muscles (listed above). White lines for silhouette/secondary anatomy. Orange also OK on the working implement path.
-5) Pure black background (#000000). Clean dual-line technical sketch. Sharp high-contrast strokes, crisp joints, no muddy gray fills, no photorealism, no stick figures.
-6) Safe joints, clear hands with distinct fingers, readable silhouette, landscape centered composition.
-7) ZERO text, letters, numbers, labels, arrows with captions, watermarks, or logos in the image.
+1) EQUIPMENT FIDELITY: Barbell ≠ dumbbell. Two dumbbells = two separate short handles, one per hand — NEVER one long bar. Resistance band = visible elastic band under tension, not a dumbbell. Cable ≠ free weight.
+2) If the title says mancuernas / dumbbells, both hands (or the working hand) hold dumbbells; there must be a visible gap between implements — no connecting shaft.
+3) If the title says liga / banda / band, draw the band path clearly; do not substitute a dumbbell or cable.
+4) Pose must match BODY POSITION + TECHNIQUE STEPS (e.g. standing band ER ≠ side-lying DB ER).
+5) UPPER BODY SHIRTLESS — athletic shorts + sneakers only. Non-sexual, coaching-anatomical.
+6) ACTIVATION GLOW: molten orange (#FF6B35) on working muscle fibers; white for silhouette. Pure black background. Sharp dual-line technical sketch, landscape composition.
+7) ZERO text, letters, numbers, labels, watermarks, or logos.
 
-Illustrate one decisive mid-rep coaching frame of PRIMARY VARIATION with EQUIPMENT exactly as locked, featuring the SAME ARMATUS athlete from the references.`;
+Illustrate ONE decisive mid-rep frame of PRIMARY VARIATION with LOCKED EQUIPMENT only, same ARMATUS athlete as references (character only).`;
 }
 
-export const DEFAULT_PROMPT_PLACEHOLDER = `Cliente: Atleta
-Objetivo: fuerza de piernas para corredor de maratón / prevención de lesiones
+export const DEFAULT_PROMPT_PLACEHOLDER = `Cliente: EDUARDO
+Objetivo: Fuerza y reducir riesgo de lesión
 Nivel: intermedio
-Duración: ~45 min · 2× por semana
 Ejercicios:
-1. Sentadilla libre (Back Squat)
-2. Single-Leg RDL
-3. Sentadilla búlgara + Step-up con knee drive
-4. Plancha Copenhagen
-5. Complejo de tobillo (sóleo sentado + tibial anterior)
-Notas: explicación biomecánica profesional, errores comunes y beneficio específico para running. Incluir bocetos técnicos.`;
+Crea una rutina con este calentamiento y este bloque principal.
+
+CALENTAMIENTO:
+1. Movilidad de cadera - 10 repeticiones por lado de cada uno:
+   - Piernas de un lado a otro
+   - Abducciones
+   - Desplantes
+2. Rotación externa de hombro con liga - 10 rep por lado
+3. Rotación interna de hombro con liga - 10 rep por lado
+4. Lagartijas - 15 repeticiones
+
+BLOQUE PRINCIPAL:
+- Sentadilla con mancuerna — 3 series × 8 reps
+- Press de pecho con mancuernas — 3 series × 12 reps
+- Step up con knee drive (reps por lado) — 3 series × 6 reps
+- Press de hombro con mancuernas — 3 series × 8 reps
+- Plancha Copenhagen (segundos por lado) — 3 series × 30 seg
+- Tibiales — 3 series × 15 reps
+Notas: explicación biomecánica profesional, errores comunes y beneficio específico. Incluir bocetos técnicos.`;

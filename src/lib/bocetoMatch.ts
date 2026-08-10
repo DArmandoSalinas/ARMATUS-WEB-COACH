@@ -409,6 +409,8 @@ const RULES: BocetoRule[] = [
     ],
   },
   {
+    // Library JPG = side-lying EXTERNAL rotation with DUMBBELL only.
+    // Standing band IR/ER and internal rotation → rejected → AI.
     key: 'externalrotation',
     patterns: [
       /\bexternal\s*rotation\b/i,
@@ -966,6 +968,7 @@ const RULES: BocetoRule[] = [
     patterns: [
       /\bpush[- ]?ups?\b/i,
       /\bflexi[oó]n(?:es)?\b/i,
+      /\blagartijas?\b/i,
       /\bplancha\s*de\s*empuje\b/i,
       /\bscapular\s*push[\s-]?up\b/i,
     ],
@@ -1044,6 +1047,7 @@ const RULES: BocetoRule[] = [
     patterns: [
       /\blunge\b/i,
       /\bzancada\b/i,
+      /\bdesplantes?\b/i,
       /\bsplit\s*squat\b/i,
       /\bsentadilla\s+dividida\b/i,
       /\bcossack\b/i,
@@ -1233,6 +1237,29 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bkettle\b/i,
     /\bsingle[- ]?leg\b/i,
     /\buna\s+pierna\b/i,
+  ],
+  // Asset: side-lying DB external rotation — reject band / IR / standing
+  externalrotation: [
+    /\binterna\b/i,
+    /\binternal\b/i,
+    /\bbanda\b/i,
+    /\bband\b/i,
+    /\bligas?\b/i,
+    /\btheraband\b/i,
+    /\belastic/i,
+    /\bde\s+pie\b/i,
+    /\bstanding\b/i,
+    /\bpolea\b/i,
+    /\bcable\b/i,
+  ],
+  // Generic mobility JPG — reject specific named drills (generate AI)
+  mobility: [
+    /\babducci/i,
+    /\bdesplante/i,
+    /\blunge/i,
+    /\bpiernas?\s+de\s+un\s+lado\b/i,
+    /\bside[\s-]?to[\s-]?side\b/i,
+    /\brotaci[oó]n\b/i,
   ],
   curl: [/\bm[aá]quina\b/i, /\bcable\b/i, /\bpolea\b/i],
   lateral: [/\bcable\b/i, /\bpolea\b/i, /\bm[aá]quina\b/i],
