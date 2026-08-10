@@ -134,6 +134,9 @@ export async function generateRoutineFromPrompt(
   // Vercel response-size / timeout limits on multi-image generate.
   const withLibrary = await attachBocetos(exercises, { libraryOnly: true });
 
+  const duration = parsed.duration?.trim();
+  const frequency = parsed.frequency?.trim();
+
   return {
     id: nanoid(12),
     createdAt: now,
@@ -142,8 +145,14 @@ export async function generateRoutineFromPrompt(
     clientName: parsed.clientName?.trim() || "Atleta",
     objective: parsed.objective?.trim() || "Rutina personalizada",
     level: asLevel(parsed.level),
-    duration: parsed.duration?.trim() || "~45 min",
-    frequency: parsed.frequency?.trim() || "2× por semana",
+    duration:
+      duration && !/^(null|n\/a|desconocid[oa]|none)$/i.test(duration)
+        ? duration
+        : undefined,
+    frequency:
+      frequency && !/^(null|n\/a|desconocid[oa]|none)$/i.test(frequency)
+        ? frequency
+        : undefined,
     notes: parsed.notes?.trim() || undefined,
     sourcePrompt: prompt,
     exercises: withLibrary,
@@ -260,8 +269,18 @@ export async function reviseRoutineText(
     clientName: parsed.clientName?.trim() || routine.clientName,
     objective: parsed.objective?.trim() || routine.objective,
     level: asLevel(parsed.level ?? routine.level),
-    duration: parsed.duration?.trim() || routine.duration,
-    frequency: parsed.frequency?.trim() || routine.frequency,
+    duration: (() => {
+      if (parsed.duration === null) return undefined;
+      const d = parsed.duration?.trim();
+      if (d && !/^(null|n\/a|none)$/i.test(d)) return d;
+      return routine.duration;
+    })(),
+    frequency: (() => {
+      if (parsed.frequency === null) return undefined;
+      const f = parsed.frequency?.trim();
+      if (f && !/^(null|n\/a|none)$/i.test(f)) return f;
+      return routine.frequency;
+    })(),
     notes: parsed.notes?.trim() || routine.notes,
     sourcePrompt: `${routine.sourcePrompt}\n\n---\nCambios pedidos:\n${changePrompt}`,
     exercises: withSupport,

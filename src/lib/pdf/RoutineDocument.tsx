@@ -514,14 +514,18 @@ function CoverPage({
             <Text style={s.metaValue}>{exercises.length}</Text>
             <Text style={s.metaLabel}>Bloques</Text>
           </View>
-          <View style={s.metaChip}>
-            <Text style={s.metaValue}>{routine.duration}</Text>
-            <Text style={s.metaLabel}>Duración</Text>
-          </View>
-          <View style={s.metaChip}>
-            <Text style={s.metaValue}>{routine.frequency}</Text>
-            <Text style={s.metaLabel}>Frecuencia</Text>
-          </View>
+          {routine.duration ? (
+            <View style={s.metaChip}>
+              <Text style={s.metaValue}>{routine.duration}</Text>
+              <Text style={s.metaLabel}>Duración</Text>
+            </View>
+          ) : null}
+          {routine.frequency ? (
+            <View style={s.metaChip}>
+              <Text style={s.metaValue}>{routine.frequency}</Text>
+              <Text style={s.metaLabel}>Frecuencia</Text>
+            </View>
+          ) : null}
           <View style={s.metaChip}>
             <Text style={s.metaValue}>{routine.level}</Text>
             <Text style={s.metaLabel}>Nivel</Text>

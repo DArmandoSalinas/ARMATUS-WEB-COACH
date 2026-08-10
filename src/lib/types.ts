@@ -44,8 +44,10 @@ export type Routine = {
   clientName: string;
   objective: string;
   level: Level;
-  duration: string;
-  frequency: string;
+  /** Only set when the coach specified it — never invent. */
+  duration?: string;
+  /** Only set when the coach specified it — never invent. */
+  frequency?: string;
   notes?: string;
   sourcePrompt: string;
   exercises: Exercise[];

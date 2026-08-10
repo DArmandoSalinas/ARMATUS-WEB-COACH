@@ -15,6 +15,7 @@ Reglas de contenido:
 - Explicaciones profundas pero claras: biomecánica, errores comunes, beneficio específico al objetivo del cliente.
 - Sin emojis. Sin marketing genérico. Sin relleno.
 - Dosificación realista según nivel (principiante / intermedio / avanzado).
+- duration y frequency: SOLO si el prompt del coach los indica con claridad. Si no, usa null (NO inventes "~45 min" ni "2× por semana").
 - Cada ejercicio necesita: badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
 - intro / purpose / benefit: un poco más largos y específicos (2–4 frases) con biomecánica real — se usan también para generar el boceto. Menciona SIEMPRE el equipo exacto (mancuernas / barra / liga elástica / peso corporal).
 - sketchCaption: 1–2 frases EN ESPAÑOL con UNA sola variación (si el nombre dice "A o B", elige A): equipo exacto, pose, ángulo, músculos a resaltar y qué NO dibujar (ej. "press en banco plano con DOS mancuernas; NO barra olímpica"). Sin la palabra "Boceto".
@@ -32,20 +33,20 @@ EQUIPO POR DEFECTO (salvo que el prompt diga otra cosa):
 - "Press de pecho/hombro/sentadilla con mancuerna(s)" → mancuernas separadas, NUNCA barra.
 - Lagartijas → peso corporal (push-up).
 
-supportLinks (Apoyo adicional):
-  1) Si el prompt del coach incluye URLs de YouTube junto a un ejercicio, asígnalas a ESE ejercicio (label corto en español, ej. "Video de movilidad"). Si un video aplica a un grupo de sub-viñetas del mismo ítem, puedes repetir el mismo URL en cada sub-ejercicio.
-  2) Si no hay URL en el prompt, incluye 1 link de búsqueda de YouTube con query preciso del ejercicio + equipo exacto, forma:
-     https://www.youtube.com/results?search_query=...
-     Label: "Buscar técnica en YouTube".
-  3) NUNCA inventes IDs de videos (watch?v=XXXX / shorts/XXXX). Solo URLs del prompt o /results?search_query=.
+supportLinks (Apoyo adicional) — muy estricto:
+  1) Si el prompt trae una URL de YouTube junto a UN ejercicio (o sus sub-viñetas), ponla SOLO en ese ejercicio / familia (ej. video de cadera → solo movilidad de cadera; video de hombro → solo rotación de hombro). Label: "Video de técnica".
+  2) NUNCA copies el video de cadera a hombro ni viceversa. NUNCA pongas el mismo watch/shorts en todos los ejercicios.
+  3) Si ese ejercicio ya tiene video del coach, NO agregues además "Buscar técnica" ni un segundo link genérico.
+  4) Solo si NO hay URL del coach para ese ejercicio: 1 link search_query con el nombre+equipo. Label: "Buscar técnica en YouTube".
+  5) NUNCA inventes IDs watch?v= / shorts/.
 
 Responde SOLO con JSON válido (sin markdown) con esta forma exacta:
 {
   "clientName": string,
   "objective": string,
   "level": "principiante" | "intermedio" | "avanzado",
-  "duration": string,
-  "frequency": string,
+  "duration": string | null,
+  "frequency": string | null,
   "notes": string | null,
   "exercises": [
     {
@@ -88,8 +89,8 @@ Responde SOLO JSON válido:
   "clientName": string,
   "objective": string,
   "level": "principiante" | "intermedio" | "avanzado",
-  "duration": string,
-  "frequency": string,
+  "duration": string | null,
+  "frequency": string | null,
   "notes": string | null,
   "exercises": [
     {

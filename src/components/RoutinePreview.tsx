@@ -22,6 +22,8 @@ export function RoutinePreview({
   editable = true,
 }: RoutinePreviewProps) {
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showChanges, setShowChanges] = useState(false);
   const [busyMap, setBusyMap] = useState<
@@ -93,6 +95,32 @@ export function RoutinePreview({
     nodes.forEach((n) => observer.observe(n));
     return () => observer.disconnect();
   }, [exercises]);
+
+  async function handleShare() {
+    setShareBusy(true);
+    setShareMsg(null);
+    try {
+      await persist();
+      const { publishRoutineClient } = await import("@/lib/publishClient");
+      const result = await publishRoutineClient(live);
+      if (!result.ok) {
+        setShareMsg(
+          result.error ||
+            "No se pudo publicar. Conecta Vercel Blob (BLOB_READ_WRITE_TOKEN).",
+        );
+        return;
+      }
+      const url = `${window.location.origin}/rutina/${live.id}`;
+      await navigator.clipboard.writeText(url);
+      setShareMsg("Link copiado. Ya se puede abrir en otro teléfono/navegador.");
+    } catch (err) {
+      setShareMsg(
+        err instanceof Error ? err.message : "No se pudo compartir la rutina.",
+      );
+    } finally {
+      setShareBusy(false);
+    }
+  }
 
   async function handlePdf() {
     setPdfBusy(true);
@@ -243,21 +271,38 @@ export function RoutinePreview({
             >
               {pdfBusy ? "Generando PDF…" : "Descargar PDF"}
             </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              disabled={shareBusy}
+              onClick={handleShare}
+            >
+              {shareBusy ? "Publicando…" : "Compartir"}
+            </button>
           </div>
+          {shareMsg ? (
+            <p className="no-print mt-3 text-sm text-[var(--text-secondary)]">
+              {shareMsg}
+            </p>
+          ) : null}
 
           <div className="hero__meta">
             <div className="meta-chip">
               <strong>{exercises.length}</strong>
               <span>Bloques</span>
             </div>
-            <div className="meta-chip">
-              <strong>{live.duration}</strong>
-              <span>Duración</span>
-            </div>
-            <div className="meta-chip">
-              <strong>{live.frequency}</strong>
-              <span>Frecuencia</span>
-            </div>
+            {live.duration ? (
+              <div className="meta-chip">
+                <strong>{live.duration}</strong>
+                <span>Duración</span>
+              </div>
+            ) : null}
+            {live.frequency ? (
+              <div className="meta-chip">
+                <strong>{live.frequency}</strong>
+                <span>Frecuencia</span>
+              </div>
+            ) : null}
             <div className="meta-chip">
               <strong style={{ textTransform: "capitalize" }}>
                 {live.level}

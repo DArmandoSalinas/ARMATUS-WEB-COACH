@@ -80,6 +80,13 @@ export function PromptComposer() {
       }
 
       await setCurrent(routine);
+      setStatus("Publicando link compartible…");
+      try {
+        const { publishRoutineClient } = await import("@/lib/publishClient");
+        await publishRoutineClient(routine);
+      } catch {
+        // Local still works; share can retry from the routine page
+      }
       setStatus("Rutina lista");
       router.push(`/rutina/${routine.id}`);
     } catch (err) {

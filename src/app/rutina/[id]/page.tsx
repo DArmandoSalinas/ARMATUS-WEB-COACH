@@ -3,7 +3,12 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { RoutinePreview } from "@/components/RoutinePreview";
-import { getRoutineHydrated, recoverStorageQuota } from "@/lib/storage";
+import { fetchPublishedRoutine } from "@/lib/publishClient";
+import {
+  getRoutineHydrated,
+  recoverStorageQuota,
+  saveRoutine,
+} from "@/lib/storage";
 import { useStudioStore } from "@/lib/store";
 import type { Routine } from "@/lib/types";
 
@@ -12,9 +17,8 @@ type PageProps = {
 };
 
 /**
- * Routines live in localStorage/IndexedDB — unavailable on the server.
- * Wait for client mount before rendering so we don't hydrate-mismatch
- * "not found" (SSR) vs the real routine (client).
+ * Prefer local storage; if missing (shared link / other browser),
+ * fetch the published copy from /api/routines/[id].
  */
 export default function RutinaPage({ params }: PageProps) {
   const { id } = use(params);
@@ -26,13 +30,32 @@ export default function RutinaPage({ params }: PageProps) {
   useEffect(() => {
     let cancelled = false;
     recoverStorageQuota();
-    getRoutineHydrated(id).then((routine) => {
+
+    (async () => {
+      const local = await getRoutineHydrated(id);
       if (cancelled) return;
-      if (routine) {
-        useStudioStore.setState({ current: routine, error: null });
+      if (local) {
+        useStudioStore.setState({ current: local, error: null });
+        setHydrated(local);
+        return;
       }
-      setHydrated(routine);
-    });
+
+      const remote = await fetchPublishedRoutine(id);
+      if (cancelled) return;
+      if (remote) {
+        try {
+          await saveRoutine(remote);
+        } catch {
+          // still show remote even if local cache fails
+        }
+        useStudioStore.setState({ current: remote, error: null });
+        setHydrated(remote);
+        return;
+      }
+
+      setHydrated(null);
+    })();
+
     return () => {
       cancelled = true;
     };
@@ -59,8 +82,9 @@ export default function RutinaPage({ params }: PageProps) {
           Rutina no encontrada
         </h1>
         <p className="mt-3 text-[var(--text-secondary)]">
-          Esta rutina no está en este navegador. Genera una nueva o abre la
-          plantilla de ejemplo.
+          Este link aún no está publicado en la nube, o la rutina solo existía
+          en el navegador del coach. Pide que vuelva a abrirla y pulse
+          &quot;Compartir&quot;.
         </p>
         <div className="mt-6 flex gap-3">
           <Link href="/crear" className="btn btn--primary">
