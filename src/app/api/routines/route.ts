@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type { Routine } from "@/lib/types";
-import { publishRoutine } from "@/lib/remoteRoutine";
+import { publishRoutineJson } from "@/lib/remoteRoutine";
 
 export const maxDuration = 60;
 
-/** Publish a routine so it can be opened on another device via /rutina/[id]. */
+/** Publish lean routine JSON (images must already be remote URLs). */
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { routine?: Routine };
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await publishRoutine(routine);
+    const result = await publishRoutineJson(routine);
     if (!result.ok) {
       return NextResponse.json(
         { error: result.error || "No se pudo publicar." },

@@ -102,17 +102,33 @@ export function RoutinePreview({
     try {
       await persist();
       const { publishRoutineClient } = await import("@/lib/publishClient");
-      const result = await publishRoutineClient(live);
+      const result = await publishRoutineClient(live, setShareMsg);
       if (!result.ok) {
         setShareMsg(
           result.error ||
-            "No se pudo publicar. Conecta Vercel Blob (BLOB_READ_WRITE_TOKEN).",
+            "No se pudo publicar. Revisa que Blob tenga el token read-write.",
         );
         return;
       }
-      const url = `${window.location.origin}/rutina/${live.id}`;
-      await navigator.clipboard.writeText(url);
-      setShareMsg("Link copiado. Ya se puede abrir en otro teléfono/navegador.");
+      const url =
+        result.url || `${window.location.origin}/rutina/${live.id}`;
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        /* clipboard may be blocked; still show the link */
+      }
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `ARMATUS · ${live.clientName}`,
+            text: `Rutina para ${live.clientName}`,
+            url,
+          });
+        } catch {
+          /* user cancelled share sheet — fine */
+        }
+      }
+      setShareMsg(`Listo. Link listo para enviar:\n${url}`);
     } catch (err) {
       setShareMsg(
         err instanceof Error ? err.message : "No se pudo compartir la rutina.",
@@ -281,9 +297,12 @@ export function RoutinePreview({
             </button>
           </div>
           {shareMsg ? (
-            <p className="no-print mt-3 text-sm text-[var(--text-secondary)]">
+            <div
+              className="no-print mt-4 rounded-[14px] border border-[rgba(255,107,53,0.35)] bg-[rgba(255,107,53,0.1)] px-4 py-3 text-sm text-[var(--text-secondary)] whitespace-pre-wrap break-all"
+              role="status"
+            >
               {shareMsg}
-            </p>
+            </div>
           ) : null}
 
           <div className="hero__meta">
