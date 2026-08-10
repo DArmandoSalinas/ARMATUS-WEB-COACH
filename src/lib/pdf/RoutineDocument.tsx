@@ -4,6 +4,7 @@ import {
   Text,
   View,
   Image,
+  Link,
   StyleSheet,
 } from "@react-pdf/renderer";
 import type { Exercise, Routine } from "@/lib/types";
@@ -381,6 +382,30 @@ function createStyles(fallback: boolean) {
     color: C.muted,
     marginBottom: 2,
   },
+  support: {
+    marginTop: 8,
+    backgroundColor: "rgba(142,142,147,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(142,142,147,0.28)",
+    borderRadius: 10,
+    padding: 9,
+  },
+  supportTitle: {
+    fontFamily: display,
+    fontWeight: 700,
+    fontSize: 9,
+    letterSpacing: 1.3,
+    color: C.muted,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  supportLink: {
+    fontSize: 8,
+    lineHeight: 1.35,
+    color: C.orange,
+    textDecoration: "underline",
+    marginBottom: 2,
+  },
   pageFooter: {
     position: "absolute",
     bottom: 18,
@@ -645,6 +670,17 @@ function ExercisePage({
           <Text style={s.blockBody}>{clip(exercise.benefit, 220)}</Text>
         </View>
       </View>
+
+      {(exercise.supportLinks ?? []).length > 0 ? (
+        <View style={s.support}>
+          <Text style={s.supportTitle}>Apoyo adicional</Text>
+          {(exercise.supportLinks ?? []).slice(0, 3).map((link) => (
+            <Link key={link.url} src={link.url} style={s.supportLink}>
+              {clip(link.label || link.url, 72)}
+            </Link>
+          ))}
+        </View>
+      ) : null}
 
       <View style={s.pageFooter} fixed>
         <Text style={s.pageFooterText}>ARMATUS · {routine.clientName}</Text>

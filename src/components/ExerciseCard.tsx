@@ -174,6 +174,7 @@ export function ExerciseCard({
             alt={`Boceto: ${exercise.name}`}
             width={1536}
             height={1024}
+            decoding="async"
           />
         ) : (
           <div className="sketch__placeholder">Boceto pendiente</div>
@@ -319,6 +320,59 @@ export function ExerciseCard({
             <p>{exercise.benefit}</p>
           )}
         </div>
+      </div>
+
+      <div className="support">
+        <h4>Apoyo adicional</h4>
+        {editable ? (
+          <textarea
+            className="field-edit"
+            rows={3}
+            value={(exercise.supportLinks ?? [])
+              .map((l) => (l.label ? `${l.label} | ${l.url}` : l.url))
+              .join("\n")}
+            placeholder={
+              "Una URL por línea. Opcional: Etiqueta | https://youtube.com/..."
+            }
+            onChange={(e) => {
+              const lines = e.target.value
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean);
+              const supportLinks = lines
+                .map((line) => {
+                  const pipe = line.indexOf("|");
+                  if (pipe >= 0) {
+                    const label = line.slice(0, pipe).trim();
+                    const url = line.slice(pipe + 1).trim();
+                    return label ? { label, url } : { url };
+                  }
+                  return { url: line };
+                })
+                .filter((l) => /^https?:\/\//i.test(l.url));
+              onChange?.({
+                supportLinks: supportLinks.length ? supportLinks : undefined,
+              });
+            }}
+          />
+        ) : (exercise.supportLinks ?? []).length > 0 ? (
+          <ul className="support__list">
+            {(exercise.supportLinks ?? []).map((link) => (
+              <li key={link.url}>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="support__link"
+                >
+                  {link.label || "Ver en YouTube"}
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="support__empty">Sin enlaces de apoyo.</p>
+        )}
       </div>
     </article>
   );

@@ -7,6 +7,11 @@ import {
   REVISE_SYSTEM_PROMPT,
   ROUTINE_SYSTEM_PROMPT,
 } from "./prompts";
+import {
+  attachSupportLinksFromPrompt,
+  ensureSupportSearchLinks,
+  normalizeSupportLinks,
+} from "./supportLinks";
 
 function requireClient(): OpenAI {
   const key = process.env.OPENAI_API_KEY?.trim();
@@ -41,6 +46,7 @@ type RawExercise = {
   commonMistakes?: string[];
   benefit?: string;
   sketchCaption?: string;
+  supportLinks?: { label?: string | null; url?: string }[];
 };
 
 function normalizeExercise(raw: RawExercise, order: number): Exercise {
@@ -73,6 +79,7 @@ function normalizeExercise(raw: RawExercise, order: number): Exercise {
       : [],
     benefit: raw.benefit?.trim() || "",
     sketchCaption: raw.sketchCaption?.trim() || "Vista técnica",
+    supportLinks: normalizeSupportLinks(raw.supportLinks),
   };
 }
 
@@ -109,7 +116,7 @@ export async function generateRoutineFromPrompt(
   };
 
   const now = new Date().toISOString();
-  const exercises = (parsed.exercises ?? []).map((ex, i) =>
+  let exercises = (parsed.exercises ?? []).map((ex, i) =>
     normalizeExercise(ex, i),
   );
 
@@ -118,6 +125,10 @@ export async function generateRoutineFromPrompt(
       "La IA no devolvió ejercicios. Revisa el prompt e intenta de nuevo.",
     );
   }
+
+  exercises = ensureSupportSearchLinks(
+    attachSupportLinksFromPrompt(exercises, prompt),
+  );
 
   // Library paths only — AI bocetos are filled client-side to avoid
   // Vercel response-size / timeout limits on multi-image generate.
@@ -153,6 +164,7 @@ function leanExerciseForPrompt(ex: Exercise) {
     commonMistakes: ex.commonMistakes,
     benefit: ex.benefit,
     sketchCaption: ex.sketchCaption,
+    supportLinks: ex.supportLinks ?? [],
   };
 }
 
@@ -231,8 +243,16 @@ export async function reviseRoutineText(
       order: i,
       // Keep previous image if still valid; client will regen when missing
       imageDataUrl: needsImage ? undefined : prev?.imageDataUrl,
+      supportLinks:
+        base.supportLinks?.length
+          ? base.supportLinks
+          : prev?.supportLinks,
     };
   });
+
+  const withSupport = ensureSupportSearchLinks(
+    attachSupportLinksFromPrompt(exercises, changePrompt),
+  );
 
   return {
     ...routine,
@@ -244,7 +264,7 @@ export async function reviseRoutineText(
     frequency: parsed.frequency?.trim() || routine.frequency,
     notes: parsed.notes?.trim() || routine.notes,
     sourcePrompt: `${routine.sourcePrompt}\n\n---\nCambios pedidos:\n${changePrompt}`,
-    exercises,
+    exercises: withSupport,
   };
 }
 
@@ -285,6 +305,7 @@ export async function regenerateExerciseText(params: {
             commonMistakes: exercise.commonMistakes,
             benefit: exercise.benefit,
             sketchCaption: exercise.sketchCaption,
+            supportLinks: exercise.supportLinks ?? [],
           },
         }),
       },
@@ -301,6 +322,10 @@ export async function regenerateExerciseText(params: {
     id: exercise.id,
     order: exercise.order,
     imageDataUrl: exercise.imageDataUrl,
+    supportLinks:
+      next.supportLinks?.length
+        ? next.supportLinks
+        : exercise.supportLinks,
   };
 }
 

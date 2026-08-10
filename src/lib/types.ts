@@ -11,6 +11,11 @@ export type ExerciseDose = {
   rest?: string;
 };
 
+export type SupportLink = {
+  label?: string;
+  url: string;
+};
+
 export type Exercise = {
   id: string;
   order: number;
@@ -27,6 +32,8 @@ export type Exercise = {
   sketchCaption: string;
   /** data URL from OpenAI, or public path for seed assets */
   imageDataUrl?: string;
+  /** Videos / búsqueda de técnica (YouTube) */
+  supportLinks?: SupportLink[];
 };
 
 export type Routine = {

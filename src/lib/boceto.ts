@@ -162,8 +162,9 @@ async function generateAiBoceto(ctx: BocetoPromptContext): Promise<string> {
           image: refs,
           prompt: `${prompt}
 
-REFERENCE IMAGES: the attached bocetos are the official ARMATUS athlete in different lifts. Keep THAT exact man (hair, face shape, body, shorts/sneakers style) and the same white/orange-on-black line-art language. Do not invent a new character.`,
-          size: "1024x1024",
+REFERENCE IMAGES: the attached bocetos are the official ARMATUS athlete in different lifts. Keep THAT exact man (hair, face shape, body, shorts/sneakers style) and the same white/orange-on-black line-art language. Do not invent a new character. EQUIPMENT must match the brief exactly (barbell ≠ dumbbell).`,
+          // Landscape matches library bocetos (~3:2) and sketch UI
+          size: "1536x1024",
           quality: "high",
           // low = keep identity/style cues but allow a new pose/exercise
           input_fidelity: "low",
@@ -188,7 +189,7 @@ REFERENCE IMAGES: the attached bocetos are the official ARMATUS athlete in diffe
       const result = await client.images.generate({
         model: "gpt-image-1",
         prompt,
-        size: "1024x1024",
+        size: "1536x1024",
         quality: "high",
       });
       const b64 = result.data?.[0]?.b64_json;
@@ -256,16 +257,19 @@ Reference style + SAME athlete as ARMATUS library bocetos — neon dual-line art
 
   const body: Record<string, unknown> = {
     prompt,
-    image_size: "square_hd",
-    num_inference_steps: 28,
-    guidance_scale: 3.5,
+    image_size: {
+      width: 1536,
+      height: 1024,
+    },
+    num_inference_steps: 36,
+    guidance_scale: 3.8,
     enable_safety_checker: true,
     output_format: "png",
   };
   if (refs[0]) {
     body.image_url = refs[0];
     // Keep identity loosely; allow new pose
-    body.strength = 0.65;
+    body.strength = 0.58;
   }
 
   const res = await fetch(endpoint, {

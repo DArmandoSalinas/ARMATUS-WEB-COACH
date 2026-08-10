@@ -1075,6 +1075,8 @@ const RULES: BocetoRule[] = [
   },
   {
     key: 'squat',
+    // Canonical library asset: barbell / deep back squat only.
+    // Variants (goblet, front, DB, etc.) are rejected below → AI.
     patterns: [
       /\bsquat\b/i,
       /\bsentadilla\b/i,
@@ -1096,6 +1098,21 @@ export type BocetoMatch = {
  * Each library JPG shows ONE canonical variation. If the exercise text
  * (name + caption + intro…) contradicts that, skip library → AI.
  */
+/** Shared rejects when the library JPG shows a barbell (not DB/cable/machine). */
+const BARBELL_ASSET_REJECTS = [
+  /\bmancuernas?\b/i,
+  /\bdumbbells?\b/i,
+  /\bdb\b/i,
+  /\bkettle\b/i,
+  /\bkettlebells?\b/i,
+  /\bcable\b/i,
+  /\bpolea\b/i,
+  /\bm[aá]quina\b/i,
+  /\bsmith\b/i,
+  /\bbanda\b/i,
+  /\bbands?\b/i,
+];
+
 const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
   // Asset: two-hand barbell bent-over row
   row: [
@@ -1105,12 +1122,7 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bone[- ]?arm\b/i,
     /\bunilateral\b/i,
     /\bunipodal\b/i,
-    /\bmancuernas?\b/i,
-    /\bdumbbells?\b/i,
-    /\bdb\b/i,
-    /\bkettle\b/i,
-    /\bcable\b/i,
-    /\bpolea\b/i,
+    ...BARBELL_ASSET_REJECTS,
     /\binvertido\b/i,
     /\binverted\b/i,
     /\baustralian\b/i,
@@ -1130,7 +1142,7 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bm[aá]quina\b/i,
     /\bassisted\b/i,
   ],
-  // Asset: back squat / deep squat stance
+  // Asset: barbell back / deep squat — NEVER reuse for DB/goblet/front/etc.
   squat: [
     /\bb[uú]lgara\b/i,
     /\bbulgarian\b/i,
@@ -1139,13 +1151,26 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bsentadilla\s+en\s+pared\b/i,
     /\bpistol\b/i,
     /\bcossack\b/i,
+    ...BARBELL_ASSET_REJECTS,
+    /\bgoblet\b/i,
+    /\bfront\s*squat\b/i,
+    /\bsentadilla\s+frontal\b/i,
+    /\bsentadilla\s+con\s+(mancuerna|pesa|kettle)/i,
+    /\bsafety[- ]?bar\b/i,
+    /\bzercher\b/i,
+    /\bsissy\b/i,
+    /\bbox\s*squat\b/i,
+    /\bpause\s*squat\b/i,
   ],
-  // Asset: barbell bench press
+  // Asset: barbell bench press (flat)
   bench: [
-    /\bmancuernas?\b/i,
-    /\bdumbbells?\b/i,
+    ...BARBELL_ASSET_REJECTS,
     /\bfloor\s*press\b/i,
     /\bpush[- ]?ups?\b/i,
+    /\blagartijas?\b/i,
+    /\bincline\b/i,
+    /\bdeclin/i,
+    /\binclinad/i,
   ],
   // Asset: standing cable fly — reject machine/dumbbell variants
   chestfly: [
@@ -1161,9 +1186,56 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bsentado\b/i,
     /\bseated\b/i,
   ],
-  deadlift: [/\brdl\b/i, /\brumano\b/i, /\bromanian\b/i, /\bsingle[- ]?leg\b/i],
-  lunge: [/\bbulgarian\b/i, /\bb[uú]lgara\b/i],
-  overhead: [/\blandmine\b/i, /\barnold\b/i, /\bz\s*press\b/i],
+  // Asset: conventional barbell deadlift
+  deadlift: [
+    /\brdl\b/i,
+    /\brumano\b/i,
+    /\bromanian\b/i,
+    /\bsingle[- ]?leg\b/i,
+    /\btrap\s*bar\b/i,
+    /\bhexa\s*bar\b/i,
+    /\bsumo\b/i,
+    ...BARBELL_ASSET_REJECTS,
+  ],
+  lunge: [
+    /\bbulgarian\b/i,
+    /\bb[uú]lgara\b/i,
+    ...BARBELL_ASSET_REJECTS,
+    /\bwalking\b/i,
+    /\bcaminando\b/i,
+    /\breversa\b/i,
+    /\breverse\b/i,
+  ],
+  // Asset: barbell overhead / military press
+  overhead: [
+    /\blandmine\b/i,
+    /\barnold\b/i,
+    /\bz\s*press\b/i,
+    ...BARBELL_ASSET_REJECTS,
+    /\bpush\s*press\b/i,
+    /\bbehind[\s-]?the[\s-]?neck\b/i,
+    /\btras\s+nuca\b/i,
+    /\bsentado\b/i,
+    /\bseated\b/i,
+  ],
+  hipthrust: [
+    /\buna\s+pierna\b/i,
+    /\bsingle[- ]?leg\b/i,
+    /\bglute\s*bridge\b/i,
+    /\bpuente\b/i,
+    /\bmancuernas?\b/i,
+    /\bdumbbells?\b/i,
+  ],
+  rdl: [
+    /\bmancuernas?\b/i,
+    /\bdumbbells?\b/i,
+    /\bdb\b/i,
+    /\bkettle\b/i,
+    /\bsingle[- ]?leg\b/i,
+    /\buna\s+pierna\b/i,
+  ],
+  curl: [/\bm[aá]quina\b/i, /\bcable\b/i, /\bpolea\b/i],
+  lateral: [/\bcable\b/i, /\bpolea\b/i, /\bm[aá]quina\b/i],
 };
 
 export type BocetoTextContext = {
@@ -1194,11 +1266,12 @@ export function isCompatibleWithLibraryAsset(
   return !rejects.some((re) => re.test(blob));
 }
 
-/** First matching rule (any strength). */
+/** First matching rule (any strength). Uses name + nameEn. */
 export function resolveBocetoMatch(
   name: string | undefined | null,
+  ctx?: BocetoTextContext | null,
 ): BocetoMatch | null {
-  const n = (name || "").trim();
+  const n = [name, ctx?.nameEn].filter(Boolean).join(" | ").trim();
   if (!n) return null;
   for (const rule of RULES) {
     if (rule.patterns.some((re) => re.test(n))) {
@@ -1211,12 +1284,13 @@ export function resolveBocetoMatch(
 /**
  * Strong + compatible library match only.
  * Pass coaching text so "remo a una mano" does not reuse barbell-row art.
+ * If equipment/variation is not an exact fit for the JPG → null (AI).
  */
 export function resolveBocetoKey(
   name: string | undefined | null,
   ctx?: BocetoTextContext | null,
 ): BocetoKey | null {
-  const match = resolveBocetoMatch(name);
+  const match = resolveBocetoMatch(name, ctx);
   if (!match || match.strength !== "strong") return null;
   if (!isCompatibleWithLibraryAsset(match.key, name || "", ctx)) return null;
   return match.key;

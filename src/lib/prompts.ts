@@ -15,9 +15,15 @@ Reglas de contenido:
 - Explicaciones profundas pero claras: biomecánica, errores comunes, beneficio específico al objetivo del cliente.
 - Sin emojis. Sin marketing genérico. Sin relleno.
 - Dosificación realista según nivel (principiante / intermedio / avanzado).
-- Cada ejercicio necesita: badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption.
+- Cada ejercicio necesita: badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
 - intro / purpose / benefit: un poco más largos y específicos (2–4 frases) con biomecánica real — se usan también para generar el boceto.
 - sketchCaption: 1–2 frases EN ESPAÑOL con UNA sola variación (si el nombre dice "A o B", elige A): equipo exacto, pose, ángulo, músculos a resaltar y qué NO dibujar (ej. "pec deck sentado con almohadillas; NO poleas ni mancuernas"). Sin la palabra "Boceto".
+- supportLinks (Apoyo adicional):
+  1) Si el prompt del coach incluye URLs de YouTube junto a un ejercicio, asígnalas a ESE ejercicio (label corto en español, ej. "Video de movilidad").
+  2) Si no hay URL en el prompt, incluye 1 link de búsqueda de YouTube con query preciso del ejercicio + equipo exacto, forma:
+     https://www.youtube.com/results?search_query=...
+     (usa encode mentalmente: espacios como +). Label: "Buscar técnica en YouTube".
+  3) NUNCA inventes IDs de videos (watch?v=XXXX / shorts/XXXX). Solo URLs del prompt o /results?search_query=.
 
 Responde SOLO con JSON válido (sin markdown) con esta forma exacta:
 {
@@ -39,7 +45,8 @@ Responde SOLO con JSON válido (sin markdown) con esta forma exacta:
       "steps": [{ "title": string, "body": string }],
       "commonMistakes": string[],
       "benefit": string,
-      "sketchCaption": string
+      "sketchCaption": string,
+      "supportLinks": [{ "label": string | null, "url": string }]
     }
   ]
 }`;
@@ -55,9 +62,10 @@ Reglas:
 - Si pide cambios de dosificación, nivel, objetivo o cliente, actualízalos.
 - Mantén el campo "id" de cada ejercicio que conserves (para no regenerar bocetos innecesarios).
 - Ejercicios NUEVOS: id = null.
-- Cada ejercicio necesita: id, name, nameEn, badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption.
+- Cada ejercicio necesita: id, name, nameEn, badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
 - sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y restricciones visuales (ej. "NO tras nuca").
-- Marca "needsNewImage": true solo si el ejercicio es nuevo o cambió tanto que el boceto anterior ya no aplica.
+- Conserva supportLinks existentes salvo que el pedido los cambie; para ejercicios nuevos aplica las mismas reglas de YouTube (URLs del prompt o search_query; nunca inventes watch?v=).
+- Marca "needsNewImage": true solo si el ejercicio es nuevo o cambió tanto que el boceto anterior ya no aplica (incluye cambio de equipo: barra ≠ mancuernas).
 
 Responde SOLO JSON válido:
 {
@@ -81,7 +89,8 @@ Responde SOLO JSON válido:
       "steps": [{ "title": string, "body": string }],
       "commonMistakes": string[],
       "benefit": string,
-      "sketchCaption": string
+      "sketchCaption": string,
+      "supportLinks": [{ "label": string | null, "url": string }]
     }
   ]
 }`;
@@ -91,6 +100,7 @@ export const REGEN_TEXT_SYSTEM_PROMPT = `Eres la voz técnica del Coach Studio d
 Regenera SOLO el contenido de coaching de UN ejercicio en español profesional (biomecánica, errores, beneficio). Mantén el nombre del ejercicio salvo que el contexto pida cambiarlo.
 intro/purpose/benefit un poco más específicos. sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y qué NO dibujar.
 
+Conserva o regenera supportLinks (YouTube del contexto o search_query; nunca inventes watch?v=).
 Sin emojis. Responde SOLO JSON válido:
 {
   "name": string,
@@ -103,7 +113,8 @@ Sin emojis. Responde SOLO JSON válido:
   "steps": [{ "title": string, "body": string }],
   "commonMistakes": string[],
   "benefit": string,
-  "sketchCaption": string
+  "sketchCaption": string,
+  "supportLinks": [{ "label": string | null, "url": string }]
 }`;
 
 function clipPrompt(text: string | undefined | null, max: number): string {
@@ -150,12 +161,12 @@ TECHNIQUE CUES: ${cues || clipPrompt(ctx.intro, 160)}
 FORBIDDEN SUBSTITUTES: ${avoid || "any different machine or free-weight type"}
 
 === NON-NEGOTIABLE VISUAL RULES ===
-1) Exact equipment match. Pec deck ≠ cable crossover ≠ dumbbell fly. Barbell ≠ dumbbell. Single-arm ≠ two-hand.
+1) Exact equipment match. Pec deck ≠ cable crossover ≠ dumbbell fly. Barbell ≠ dumbbell. Single-arm ≠ two-hand. If EQUIPMENT says dumbbells, draw two dumbbells — never a barbell.
 2) If the title offered "A or B", illustrate ONLY the primary variation above — never a mashup.
 3) UPPER BODY SHIRTLESS — no tank, no t-shirt, no hoodie. Bare torso so anatomy reads clearly. Athletic shorts + sneakers only. Non-sexual, coaching-anatomical, adult athlete.
 4) ACTIVATION GLOW: molten orange (#FF6B35) accent lines along the fibers of the working muscles (listed above). White lines for silhouette/secondary anatomy. Orange also OK on the working implement path.
-5) Pure black background (#000000). Clean dual-line technical sketch. No photorealism, no gray fills, no stick figures.
-6) Safe joints, clear hands with distinct fingers, readable silhouette, square centered composition.
+5) Pure black background (#000000). Clean dual-line technical sketch. Sharp high-contrast strokes, crisp joints, no muddy gray fills, no photorealism, no stick figures.
+6) Safe joints, clear hands with distinct fingers, readable silhouette, landscape centered composition.
 7) ZERO text, letters, numbers, labels, arrows with captions, watermarks, or logos in the image.
 
 Illustrate one decisive mid-rep coaching frame of PRIMARY VARIATION with EQUIPMENT exactly as locked, featuring the SAME ARMATUS athlete from the references.`;
