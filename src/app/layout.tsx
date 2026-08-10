@@ -19,7 +19,12 @@ export const metadata: Metadata = {
   title: "ARMATUS Coach Studio",
   description:
     "Studio prompt-first para crear rutinas premium con explicación biomecánica en español y bocetos técnicos ARMATUS.",
-  icons: { icon: "/favicon.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
