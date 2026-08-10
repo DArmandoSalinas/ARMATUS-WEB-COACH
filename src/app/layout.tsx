@@ -20,10 +20,7 @@ export const metadata: Metadata = {
   description:
     "Studio prompt-first para crear rutinas premium con explicación biomecánica en español y bocetos técnicos ARMATUS.",
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon.png", type: "image/png" },
-    ],
+    icon: [{ url: "/favicon.png", type: "image/png" }],
   },
 };
 
