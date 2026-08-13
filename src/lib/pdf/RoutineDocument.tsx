@@ -41,16 +41,16 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   const clara = variant === "clara";
   const C = clara ? CLARA : STUDIO;
   const body = fallback ? "Helvetica" : "Outfit";
-  const display = fallback ? "Helvetica" : clara ? "Outfit" : "BarlowCondensed";
-  const up = clara ? ("none" as const) : ("uppercase" as const);
-  const displayWeight = clara ? 600 : 800;
+  const display = fallback ? "Helvetica" : "BarlowCondensed";
+  const up = "uppercase" as const;
+  const displayWeight = 800;
   return StyleSheet.create({
   page: {
     backgroundColor: C.bg,
     color: C.text,
-    paddingTop: clara ? 32 : 28,
-    paddingBottom: clara ? 78 : 48,
-    paddingHorizontal: clara ? 36 : 32,
+    paddingTop: 28,
+    paddingBottom: 48,
+    paddingHorizontal: 32,
     fontFamily: body,
   },
   coverPage: {
@@ -122,9 +122,9 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   coverTitle: {
     fontFamily: display,
     fontWeight: displayWeight,
-    fontSize: clara ? 34 : 42,
-    lineHeight: clara ? 1.12 : 0.95,
-    letterSpacing: clara ? 0.2 : 1,
+    fontSize: 42,
+    lineHeight: 0.95,
+    letterSpacing: 1,
     textTransform: up,
     marginBottom: 18,
     maxWidth: "92%",
@@ -133,8 +133,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     color: C.orange,
   },
   lead: {
-    fontSize: clara ? 13 : 11,
-    lineHeight: 1.55,
+    fontSize: 11,
+    lineHeight: 1.45,
     color: C.muted,
     maxWidth: "85%",
     marginBottom: 28,
@@ -217,9 +217,9 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   exTitle: {
     fontFamily: display,
     fontWeight: displayWeight,
-    fontSize: clara ? 20 : 22,
-    lineHeight: clara ? 1.2 : 1.05,
-    letterSpacing: clara ? 0.2 : 0.5,
+    fontSize: 22,
+    lineHeight: 1.05,
+    letterSpacing: 0.5,
     textTransform: up,
     marginBottom: 5,
   },
@@ -227,8 +227,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     color: C.orange,
   },
   exIntro: {
-    fontSize: clara ? 11 : 9,
-    lineHeight: clara ? 1.5 : 1.4,
+    fontSize: 9,
+    lineHeight: 1.4,
     color: C.muted,
   },
   doseBox: {
@@ -263,8 +263,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   sketch: {
     width: "100%",
-    height: clara ? 210 : 155,
-    objectFit: "contain",
+    height: 168,
     backgroundColor: "#050505",
     borderWidth: 1,
     borderColor: "rgba(255,107,53,0.25)",
@@ -300,7 +299,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     fontWeight: 700,
   },
   grid2: {
-    flexDirection: clara ? "column" : "row",
+    flexDirection: "row",
+    gap: 8,
     marginBottom: 8,
   },
   block: {
@@ -310,8 +310,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderColor: C.border,
     borderRadius: 10,
     padding: 9,
-    marginBottom: 8,
-    marginRight: clara ? 0 : 8,
   },
   blockTitle: {
     fontFamily: display,
@@ -323,13 +321,14 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     marginBottom: 6,
   },
   blockBody: {
-    fontSize: clara ? 11 : 8.5,
-    lineHeight: clara ? 1.5 : 1.35,
+    fontSize: 8.5,
+    lineHeight: 1.35,
     color: C.muted,
   },
   tags: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 3,
   },
   tag: {
     backgroundColor: "rgba(255,107,53,0.12)",
@@ -340,8 +339,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     paddingHorizontal: 5,
     fontSize: 7.5,
     color: C.orangeSoft,
-    marginBottom: 3,
-    marginRight: 3,
+    marginBottom: 2,
   },
   stepsBlock: {
     backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.9)",
@@ -354,16 +352,15 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   stepsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 6,
   },
   step: {
-    width: clara ? "100%" : "48.5%",
+    width: "48.5%",
     backgroundColor: clara ? "#F3EFE8" : "rgba(0,0,0,0.4)",
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 7,
     padding: 7,
-    marginBottom: 6,
-    marginRight: clara ? 0 : 6,
   },
   stepN: {
     fontFamily: display,
@@ -375,12 +372,13 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     marginBottom: 3,
   },
   stepBody: {
-    fontSize: clara ? 11 : 8,
-    lineHeight: clara ? 1.45 : 1.32,
+    fontSize: 8,
+    lineHeight: 1.32,
     color: C.muted,
   },
   split: {
-    flexDirection: clara ? "column" : "row",
+    flexDirection: "row",
+    gap: 8,
   },
   warn: {
     flex: 1,
@@ -389,8 +387,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderColor: clara ? "rgba(180,35,24,0.28)" : "rgba(255,69,58,0.28)",
     borderRadius: 10,
     padding: 9,
-    marginBottom: 8,
-    marginRight: clara ? 0 : 8,
   },
   benefit: {
     flex: 1,
@@ -399,7 +395,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderColor: clara ? "rgba(210,74,22,0.28)" : "rgba(255,107,53,0.28)",
     borderRadius: 10,
     padding: 9,
-    marginBottom: 8,
   },
   warnTitle: {
     fontFamily: display,
@@ -420,8 +415,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     marginBottom: 4,
   },
   listItem: {
-    fontSize: clara ? 11 : 8,
-    lineHeight: clara ? 1.45 : 1.32,
+    fontSize: 8,
+    lineHeight: 1.32,
     color: C.muted,
     marginBottom: 4,
   },
@@ -451,9 +446,9 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   pageFooter: {
     position: "absolute",
-    bottom: 22,
-    left: clara ? 36 : 32,
-    right: clara ? 36 : 32,
+    bottom: 18,
+    left: 32,
+    right: 32,
     flexDirection: "row",
     justifyContent: "space-between",
     borderTopWidth: 1,
@@ -641,9 +636,9 @@ function TocPage({
   );
 }
 
-function clip(text: string, max: number, unlimited = false): string {
+function clip(text: string, max: number): string {
   const t = text.trim();
-  if (unlimited || t.length <= max) return t;
+  if (t.length <= max) return t;
   return `${t.slice(0, max - 1).trimEnd()}…`;
 }
 
@@ -652,28 +647,22 @@ function ExercisePage({
   index,
   routine,
   styles: s,
-  variant,
 }: {
   exercise: Exercise;
   index: number;
   routine: Routine;
   styles: ReturnType<typeof createStyles>;
-  variant: PdfVariant;
 }) {
   const img = exercise.imageDataUrl;
   const doseMeta = [exercise.dose.rpe, exercise.dose.rest]
     .filter(Boolean)
     .join(" · ");
   const pageLabel = `${String(index + 1).padStart(2, "0")} / ${String(routine.exercises.length).padStart(2, "0")}`;
-  const clara = variant === "clara";
-  const steps = clara ? exercise.steps : exercise.steps.slice(0, 4);
-  const mistakes = (clara
-    ? exercise.commonMistakes
-    : exercise.commonMistakes.slice(0, 3)
-  ).filter(Boolean);
+  const steps = exercise.steps.slice(0, 4);
+  const mistakes = exercise.commonMistakes.filter(Boolean).slice(0, 3);
 
   return (
-    <Page size="A4" style={s.page} wrap={clara}>
+    <Page size="A4" style={s.page} wrap={false}>
       <View style={s.exBadge}>
         <Text style={s.exBadgeText}>{exercise.badge}</Text>
       </View>
@@ -681,18 +670,18 @@ function ExercisePage({
       <View style={s.exHead} wrap={false}>
         <View style={s.exHeadMain}>
           <Text style={s.exTitle}>
-            {clip(exercise.name, 48, clara)}
+            {clip(exercise.name, 48)}
             {exercise.nameEn ? (
-              <Text style={s.exTitleEm}>{` (${clip(exercise.nameEn, 28, clara)})`}</Text>
+              <Text style={s.exTitleEm}>{` (${clip(exercise.nameEn, 28)})`}</Text>
             ) : null}
           </Text>
-          <Text style={s.exIntro}>{clip(exercise.intro, 220, clara)}</Text>
+          <Text style={s.exIntro}>{clip(exercise.intro, 220)}</Text>
         </View>
         <View style={s.doseBox}>
           <Text style={s.doseLabel}>Dosificación</Text>
-          <Text style={s.doseValue}>{clip(exercise.dose.setsReps, 28, clara)}</Text>
+          <Text style={s.doseValue}>{clip(exercise.dose.setsReps, 28)}</Text>
           {doseMeta ? (
-            <Text style={s.doseMeta}>{clip(doseMeta, 36, clara)}</Text>
+            <Text style={s.doseMeta}>{clip(doseMeta, 36)}</Text>
           ) : null}
         </View>
       </View>
@@ -700,9 +689,9 @@ function ExercisePage({
       {img ? (
         <View wrap={false}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <Image src={img} style={s.sketch} />
+          <Image key={`${exercise.id}-boceto`} src={img} style={s.sketch} cache={false} />
           <Text style={s.sketchCaption}>
-            Boceto · {clip(exercise.sketchCaption, 72, clara)}
+            Boceto · {clip(exercise.sketchCaption, 72)}
           </Text>
         </View>
       ) : (
@@ -714,12 +703,12 @@ function ExercisePage({
       <View style={s.grid2}>
         <View style={s.block} wrap={false}>
           <Text style={s.blockTitle}>Propósito y enfoque</Text>
-          <Text style={s.blockBody}>{clip(exercise.purpose, 280, clara)}</Text>
+          <Text style={s.blockBody}>{clip(exercise.purpose, 280)}</Text>
         </View>
         <View style={s.block} wrap={false}>
           <Text style={s.blockTitle}>Enfoque muscular</Text>
           <View style={s.tags}>
-            {exercise.muscles.slice(0, clara ? 10 : 6).map((m) => (
+            {exercise.muscles.slice(0, 6).map((m) => (
               <Text key={m} style={s.tag}>
                 {m}
               </Text>
@@ -728,39 +717,39 @@ function ExercisePage({
         </View>
       </View>
 
-      <View style={s.stepsBlock}>
+      <View style={s.stepsBlock} wrap={false}>
         <Text style={s.blockTitle}>Cómo ejecutarlo</Text>
         <View style={s.stepsGrid}>
           {steps.map((step, i) => (
             <View key={`${exercise.id}-s-${i}`} style={s.step} wrap={false}>
-              <Text style={s.stepN}>{clip(step.title, 28, clara)}</Text>
-              <Text style={s.stepBody}>{clip(step.body, 160, clara)}</Text>
+              <Text style={s.stepN}>{clip(step.title, 28)}</Text>
+              <Text style={s.stepBody}>{clip(step.body, 160)}</Text>
             </View>
           ))}
         </View>
       </View>
 
-      <View style={s.split}>
+      <View style={s.split} wrap={false}>
         <View style={s.warn} wrap={false}>
           <Text style={s.warnTitle}>Errores comunes</Text>
           {mistakes.map((m, i) => (
             <Text key={`${exercise.id}-m-${i}`} style={s.listItem}>
-              • {clip(m, 110, clara)}
+              • {clip(m, 110)}
             </Text>
           ))}
         </View>
         <View style={s.benefit} wrap={false}>
           <Text style={s.benefitTitle}>Beneficio</Text>
-          <Text style={s.blockBody}>{clip(exercise.benefit, 220, clara)}</Text>
+          <Text style={s.blockBody}>{clip(exercise.benefit, 220)}</Text>
         </View>
       </View>
 
       {(exercise.supportLinks ?? []).length > 0 ? (
         <View style={s.support} wrap={false}>
           <Text style={s.supportTitle}>Apoyo adicional</Text>
-          {(exercise.supportLinks ?? []).slice(0, clara ? 6 : 3).map((link) => (
+          {(exercise.supportLinks ?? []).slice(0, 3).map((link) => (
             <Link key={link.url} src={link.url} style={s.supportLink}>
-              {clip(link.label || link.url, 72, clara)}
+              {clip(link.label || link.url, 72)}
             </Link>
           ))}
         </View>
@@ -802,7 +791,6 @@ export function RoutineDocument({
           index={i}
           routine={routine}
           styles={s}
-          variant={variant}
         />
       ))}
     </Document>

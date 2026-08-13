@@ -77,36 +77,89 @@ function slugify(name: string): string {
   );
 }
 
-async function toDataUrl(src: string): Promise<string | undefined> {
+const PDF_IMG_MAX_W = 1200;
+const PDF_IMG_MAX_H = 800;
+
+function resolveImageSrc(src: string): string | undefined {
+  if (src.startsWith("idb:")) return undefined;
+  if (
+    src.startsWith("data:") ||
+    src.startsWith("blob:") ||
+    src.startsWith("http://") ||
+    src.startsWith("https://")
+  ) {
+    return src;
+  }
+  return `${window.location.origin}${src.startsWith("/") ? src : `/${src}`}`;
+}
+
+function loadHtmlImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("image load failed"));
+    if (!src.startsWith("data:")) img.crossOrigin = "anonymous";
+    img.src = src;
+  });
+}
+
+/**
+ * Decode in the browser and re-encode a compact JPEG. Huge AI PNGs and
+ * odd JPEG encodings make @react-pdf drop later images silently even
+ * when the same src already renders on the page.
+ */
+async function rasterizeForPdf(src: string): Promise<string | undefined> {
+  const resolved = resolveImageSrc(src);
+  if (!resolved) return undefined;
+
+  let objectUrl: string | undefined;
   try {
-    if (src.startsWith("data:")) return src;
-    const url = src.startsWith("http")
-      ? src
-      : `${window.location.origin}${src.startsWith("/") ? src : `/${src}`}`;
-    const res = await fetch(url);
-    if (!res.ok) return undefined;
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(String(reader.result || undefined));
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    let loadSrc = resolved;
+    if (!resolved.startsWith("data:")) {
+      const res = await fetch(resolved);
+      if (!res.ok) return undefined;
+      const blob = await res.blob();
+      objectUrl = URL.createObjectURL(blob);
+      loadSrc = objectUrl;
+    }
+
+    const img = await loadHtmlImage(loadSrc);
+    const nw = img.naturalWidth || img.width;
+    const nh = img.naturalHeight || img.height;
+    if (!nw || !nh) return undefined;
+
+    const scale = Math.min(1, PDF_IMG_MAX_W / nw, PDF_IMG_MAX_H / nh);
+    const w = Math.max(1, Math.round(nw * scale));
+    const h = Math.max(1, Math.round(nh * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.fillStyle = "#050505";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", 0.86);
   } catch {
     return undefined;
+  } finally {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
   }
 }
 
 async function hydrateImages(routine: Routine): Promise<Routine> {
-  const exercises = await Promise.all(
-    routine.exercises.map(async (ex) => {
-      if (!ex.imageDataUrl) return ex;
-      const data = await toDataUrl(ex.imageDataUrl);
-      return data
-        ? { ...ex, imageDataUrl: data }
-        : { ...ex, imageDataUrl: undefined };
-    }),
-  );
+  const exercises: Routine["exercises"] = [];
+  for (const ex of routine.exercises) {
+    if (!ex.imageDataUrl) {
+      exercises.push(ex);
+      continue;
+    }
+    const data = await rasterizeForPdf(ex.imageDataUrl);
+    exercises.push(
+      data ? { ...ex, imageDataUrl: data } : { ...ex, imageDataUrl: undefined },
+    );
+  }
   return { ...routine, exercises };
 }
 
@@ -126,7 +179,7 @@ async function renderBlob(
 }
 
 /**
- * Multi-page PDF. `clara` = light background, larger type, full text.
+ * Multi-page PDF. `clara` uses the same one-page layout as studio, light colors.
  */
 export async function downloadRoutinePdf(
   clientName: string,
