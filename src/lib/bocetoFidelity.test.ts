@@ -8,11 +8,17 @@ import {
   briefFidelityError,
   classifyLift,
   coachingConflictsWithLift,
+  directorShot,
   imagePromptFidelityError,
   libraryAssetConflictsWithLift,
+  qaSpecForLift,
   shouldSkipCharacterReferences,
 } from "./bocetoFidelity";
-import { resolveBocetoKey, resolveBocetoPath } from "./bocetoMatch";
+import {
+  isStaleLibraryBoceto,
+  resolveBocetoKey,
+  resolveBocetoPath,
+} from "./bocetoMatch";
 import { buildBocetoImagePrompt } from "./prompts";
 import type { BocetoPromptContext } from "./bocetoBrief";
 
@@ -78,10 +84,10 @@ describe("buildVisualBrief — press must never be a row", () => {
     assert.equal(shouldExcludePullingReferences(b), true);
   });
 
-  it("English-only Shoulder Press Machine does not reuse barbell overhead art", () => {
+  it("English-only Shoulder Press Machine uses machine art, not barbell overhead", () => {
     const name = "Shoulder Press Machine";
-    assert.equal(resolveBocetoPath(name), null);
-    assert.equal(resolveBocetoKey(name), null);
+    assert.equal(resolveBocetoKey(name), "machineshoulderpress");
+    assert.notEqual(resolveBocetoKey(name), "overhead");
     const b = brief({ name });
     assert.match(b.equipment, /SHOULDER PRESS MACHINE/i);
     assert.equal(
@@ -108,6 +114,12 @@ describe("buildVisualBrief — press must never be a row", () => {
     assert.doesNotMatch(b.equipment, /olympic bar/i);
     assert.match(b.movementPattern, /VERTICAL PUSH/i);
     assert.equal(resolveBocetoKey("Press de hombro con mancuernas"), null);
+    assert.equal(
+      resolveBocetoKey("PRESS DE HOMBRO EN MAQUINA", {
+        nameEn: "SHOULDER PRESS MACHINE",
+      }),
+      "machineshoulderpress",
+    );
   });
 
   it("chest press machine is a forward push, not a seated row", () => {
@@ -182,7 +194,8 @@ describe("library assets cannot cross movement families", () => {
     ] as const;
     for (const [name, nameEn] of names) {
       const key = resolveBocetoKey(name, { nameEn });
-      assert.equal(key, null, `${name} should not reuse a library JPG (got ${key})`);
+      assert.notEqual(key, "row", `${name} stole row art`);
+      assert.notEqual(key, "overhead", `${name} stole barbell overhead art`);
       const cls = classifyLift(name, nameEn);
       for (const pull of [
         "row",
@@ -220,7 +233,7 @@ describe("library assets cannot cross movement families", () => {
 });
 
 describe("image generation lock — press cannot be prompted as a row", () => {
-  it("skips character-reference poses for machine / shoulder press", () => {
+  it("skips character-reference poses so a pull-up photo cannot become a fake row", () => {
     const machine = classifyLift(
       "PRESS DE HOMBRO EN MAQUINA",
       "SHOULDER PRESS MACHINE",
@@ -229,7 +242,7 @@ describe("image generation lock — press cannot be prompted as a row", () => {
     const row = classifyLift("Remo sentado en polea");
     assert.equal(shouldSkipCharacterReferences(machine), true);
     assert.equal(shouldSkipCharacterReferences(db), true);
-    assert.equal(shouldSkipCharacterReferences(row), false);
+    assert.equal(shouldSkipCharacterReferences(row), true);
   });
 
   it("HARD LOCK is first; intro about remo/rotación never reaches the illustrator", () => {
@@ -275,5 +288,231 @@ describe("image generation lock — press cannot be prompted as a row", () => {
       coachingConflictsWithLift("Remo sentado en polea al pecho", cls),
       true,
     );
+  });
+
+  it("feeds the illustrator a coach-style SCENE, not a Spanish title card", () => {
+    const bear = buildBocetoImagePrompt({
+      name: "Bear plank",
+      nameEn: "Bear plank",
+      sketchCaption: "Rodillas flotando",
+    });
+    assert.match(bear, /SCENE:/);
+    assert.match(bear, /KNEES|hovering|TABLE/i);
+    assert.match(bear, /A coach asked an image model/i);
+
+    const wall = buildBocetoImagePrompt({
+      name: "Medias lagartijas en la pared",
+      nameEn: "Wall Half Push-ups",
+      sketchCaption: "Contra la pared",
+    });
+    assert.match(wall, /WALL/i);
+    assert.doesNotMatch(wall, /Medias lagartijas en la pared/);
+
+    const er = directorShot(
+      classifyLift("Rotación externa con banda"),
+      "Rotación externa con banda | Band ER",
+    );
+    assert.match(er, /EXTERNAL/i);
+    assert.doesNotMatch(er, /toward the belly/);
+
+    const side = qaSpecForLift(
+      classifyLift("Patada lateral", "Side kick"),
+      "Patada lateral | Side kick",
+    );
+    assert.match(side.failIf, /front kick/i);
+  });
+});
+
+describe("published routine titles — library JPGs cannot lie", () => {
+  const ctx = (nameEn: string) => ({ nameEn });
+
+  it("each listed drill has its own library key, never a cousin JPG", () => {
+    assert.equal(
+      resolveBocetoKey("Caminata en caminadora", ctx("Treadmill Walk")),
+      "treadmillwalk",
+    );
+    assert.equal(
+      resolveBocetoKey(
+        "Tratar de tocar la punta de los pies",
+        ctx("Toe Touch Stretch"),
+      ),
+      "toetouch",
+    );
+    assert.equal(
+      resolveBocetoKey(
+        "Medias lagartijas en la pared",
+        ctx("Wall Half Push-ups"),
+      ),
+      "wallpushup",
+    );
+    assert.equal(resolveBocetoKey("Bear plank", ctx("Bear plank")), "bearplank");
+    assert.equal(
+      resolveBocetoKey(
+        "Pantorilla en leg press",
+        ctx("Calf raise on leg press"),
+      ),
+      "legpresscalf",
+    );
+    assert.equal(
+      resolveBocetoKey("Abducciones acostado", ctx("Lying abductions")),
+      "lyingabduction",
+    );
+    assert.equal(
+      resolveBocetoKey("Patada lateral", ctx("Side kick")),
+      "sidekick",
+    );
+    assert.equal(
+      resolveBocetoKey("Patada hacia atrás", ctx("Back kick")),
+      "backkick",
+    );
+    assert.equal(
+      resolveBocetoKey("Rotación externa con banda", ctx("Band ER")),
+      "bander",
+    );
+    assert.equal(
+      resolveBocetoKey("Rotación interna con banda", ctx("Band IR")),
+      "bandir",
+    );
+    assert.equal(
+      resolveBocetoKey(
+        "PRESS DE HOMBRO EN MAQUINA",
+        ctx("SHOULDER PRESS MACHINE"),
+      ),
+      "machineshoulderpress",
+    );
+    assert.equal(
+      resolveBocetoKey(
+        "Press de pecho inclinado con mancuernas",
+        ctx("Incline Dumbbell Press"),
+      ),
+      "inclinedbpress",
+    );
+    assert.equal(resolveBocetoKey("Leg press"), "legpress");
+    assert.equal(
+      resolveBocetoKey("Extensiones de cuadricep", ctx("Leg extensions")),
+      "legextension",
+    );
+    assert.equal(
+      resolveBocetoKey("Puentes en el piso", ctx("Floor Bridges")),
+      "glutebridge",
+    );
+  });
+
+  it("wrong library paths on those titles are stale and must be redrawn", () => {
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Caminata en caminadora",
+        nameEn: "Treadmill Walk",
+        imageDataUrl: "/bocetos/run.jpg",
+      }),
+      true,
+    );
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Tratar de tocar la punta de los pies",
+        nameEn: "Toe Touch Stretch",
+        imageDataUrl: "/bocetos/mobility.jpg",
+      }),
+      true,
+    );
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Medias lagartijas en la pared",
+        nameEn: "Wall Half Push-ups",
+        imageDataUrl: "/bocetos/pushup.jpg",
+      }),
+      true,
+    );
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Bear plank",
+        nameEn: "Bear plank",
+        imageDataUrl: "/bocetos/plank.jpg",
+      }),
+      true,
+    );
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Pantorilla en leg press",
+        nameEn: "Calf raise on leg press",
+        imageDataUrl: "/bocetos/soleus.jpg",
+      }),
+      true,
+    );
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Puentes en el piso",
+        nameEn: "Floor Bridges",
+        imageDataUrl: "/bocetos/glutebridge.jpg",
+      }),
+      false,
+    );
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Caminata en caminadora",
+        nameEn: "Treadmill Walk",
+        imageDataUrl: "/bocetos/treadmillwalk.jpg",
+      }),
+      false,
+    );
+    assert.equal(
+      isStaleLibraryBoceto({
+        name: "Bear plank",
+        nameEn: "Bear plank",
+        imageDataUrl: "/bocetos/bearplank.jpg",
+      }),
+      false,
+    );
+  });
+
+  it("classifies the named drills instead of collapsing them into press/row/plank", () => {
+    assert.equal(
+      classifyLift("Caminata en caminadora", "Treadmill Walk").kind,
+      "treadmill-walk",
+    );
+    assert.equal(
+      classifyLift("Medias lagartijas en la pared", "Wall Half Push-ups").kind,
+      "wall-pushup",
+    );
+    assert.equal(classifyLift("Bear plank").kind, "bear-plank");
+    assert.equal(
+      classifyLift("Puentes en el piso", "Floor Bridges").kind,
+      "glute-bridge",
+    );
+    assert.equal(
+      classifyLift("Pantorilla en leg press", "Calf raise on leg press").kind,
+      "calf-raise",
+    );
+    assert.equal(
+      classifyLift("Pantorilla en leg press", "Calf raise on leg press")
+        .equipment,
+      "machine",
+    );
+    assert.equal(
+      classifyLift("Abducciones acostado", "Lying abductions").kind,
+      "lying-abduction",
+    );
+    assert.equal(
+      libraryAssetConflictsWithLift(
+        "glutebridge",
+        classifyLift("Puentes en el piso", "Floor Bridges"),
+      ),
+      false,
+    );
+    assert.equal(
+      libraryAssetConflictsWithLift(
+        "run",
+        classifyLift("Caminata en caminadora", "Treadmill Walk"),
+      ),
+      true,
+    );
+    assert.equal(
+      libraryAssetConflictsWithLift(
+        "pushup",
+        classifyLift("Medias lagartijas en la pared"),
+      ),
+      true,
+    );
+    assert.equal(shouldSkipCharacterReferences(classifyLift("Bear plank")), true);
   });
 });

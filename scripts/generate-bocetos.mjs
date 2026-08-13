@@ -103,25 +103,106 @@ const CATALOG = {
     caption:
       "side-lying forearm plank, body in a straight line, hips stacked, not a front plank",
   },
+  treadmillwalk: {
+    refs: "none",
+    name: "walking on a treadmill",
+    caption:
+      "upright walking pace on a treadmill, not sprinting, not running, no text",
+  },
+  toetouch: {
+    refs: "none",
+    name: "standing toe-touch hinge",
+    caption:
+      "ONLY the athlete, no machines, no cables, no bench. Feet together, knees locked straight, hinging at the hips, hands reaching toward the toes. Empty black around him",
+  },
+  sidekick: {
+    refs: "none",
+    name: "standing side kick to the SIDE",
+    caption:
+      "NO cable, NO machine, NO ankle strap. Athlete standing on one leg. The other leg kicks STRAIGHT OUT TO THE SIDE (frontal plane, like a side martial-arts kick), hip height. Torso upright. Not a front kick, not a kickback",
+  },
+  backkick: {
+    refs: "none",
+    name: "standing back kick bodyweight",
+    caption:
+      "NO cable, NO machine, NO ankle strap. Athlete standing upright on one leg, the other leg kicking STRAIGHT BACK behind him (glute). Hands on hips. Not a quadruped donkey kick, not a cable kickback",
+  },
+  lyingabduction: {
+    refs: "none",
+    name: "side-lying hip abduction on the floor",
+    caption:
+      "NO cable, NO machine, NO bench. Athlete lying on the FLOOR on one side, bottom leg stacked, TOP leg lifting up in a half-circle (hip abduction). Head resting on the bottom arm",
+  },
+  bander: {
+    refs: "none",
+    name: "standing band EXTERNAL rotation viewed from behind",
+    caption:
+      "Camera BEHIND the athlete. Right elbow pinned to the ribs at 90 degrees. The right fist points OUT to the right edge of the frame, away from the spine. A thin band goes from that fist further right to an anchor. You can see the back, the triceps, and the rear deltoid. The hand is NOT in front of the belly",
+  },
+  bandir: {
+    refs: "none",
+    name: "standing band INTERNAL rotation of the shoulder",
+    caption:
+      "Standing. Elbow glued to the ribs at 90 degrees. A thin resistance BAND (not a cable tower) coming across the body. Forearm rotating INWARD toward the belly (internal rotation). Not external rotation, not a press",
+  },
+  machineshoulderpress: {
+    refs: "none",
+    name: "seated machine shoulder press mid-rep",
+    caption:
+      "UPRIGHT seated, full back on the pad. MID-REP: elbows bent ~90 degrees, two independent lever handles at EAR height, pressing straight up — NOT locked out overhead, not reclined, not behind the neck, not a row, not cables",
+  },
+  inclinedbpress: {
+    refs: "none",
+    name: "incline dumbbell press both arms together",
+    caption:
+      "lying on an INCLINE bench ~30-45 degrees. TWO dumbbells at the SAME height, both at the upper chest, elbows ~90 degrees, pressing together. Not alternating, not one arm hanging, not flat bench, not a barbell, not a machine",
+  },
+  bearplank: {
+    refs: "none",
+    name: "bear plank with knees hovering",
+    caption:
+      "quadruped TABLE position: hands under shoulders, KNEES BENT 90 degrees under the hips, knees HOVERING a few cm off the floor. Short base, not a long high plank, not straight legs, not a bear crawl",
+  },
+  legpresscalf: {
+    refs: "none",
+    name: "calf raise on the leg press sled",
+    caption:
+      "seated in the 45-degree sled. ONLY the BALLS of the feet on the BOTTOM EDGE of the platform, heels hanging off, ankles extending (toes pointing). Knees almost straight. NOT a full leg press with feet in the center of the plate",
+  },
+  wallpushup: {
+    refs: "none",
+    name: "wall half push-up",
+    caption:
+      "standing, hands on a wall at chest height, body in a straight line, elbows bending as the chest moves toward the wall. Not a floor push-up, not a plank",
+  },
+  legpress: {
+    refs: "none",
+    name: "seated leg press",
+    caption:
+      "seated in a leg-press sled, feet on the platform, knees bent mid-rep pushing the sled away. Not a calf raise, not a hack squat",
+  },
+  legextension: {
+    refs: "none",
+    name: "seated leg extension machine",
+    caption:
+      "seated, pad on the shins, knees extending until the legs are straight. Not a leg press",
+  },
 };
 
 function promptFor(name, caption) {
   return `ARMATUS Coach Studio premium biomechanics boceto.
-Pure black background (#000000).
-White + molten orange (#FF6B35) dual-line neon technical drawing of: ${name}.
-Pose / equipment lock: ${caption}.
+=== HARD LOCK ===
+SILENT SKETCH: ZERO letters, words, numbers, labels, arrows-with-captions, or legends in the pixels.
+A coach asked an image model for ONE silent sketch of: ${name}.
+POSE / EQUIPMENT: ${caption}.
+Exact equipment only — do not invent a second machine, a cable stack, a bench, or another person unless the pose names them.
 UPPER BODY SHIRTLESS (no tank/t-shirt) so working muscles show orange fiber accents; athletic shorts + sneakers only; non-sexual coaching anatomy.
-Exact equipment only — do not substitute machines or free weights unless the lock names them.
 Clean anatomical line art, no fills, no stick figures, no photorealism.
-CRITICAL: no text, letters, numbers, labels, watermarks, logos.
-Landscape composition matching library bocetos (~3:2), centered subject, high contrast.
-
-REFERENCE IMAGES = CHARACTER + ART STYLE ONLY.
-Keep THAT exact man (hair, face, body, shorts/sneakers) and white/orange-on-black line art.
-Do NOT copy the exercise or equipment from the references.`;
+Landscape ~3:2, athlete + named equipment centered, the rest empty black.`;
 }
 
 async function loadRefs(kind) {
+  if (!kind || kind === "none") return [];
   const files =
     kind === "floor"
       ? ["pushup.jpg"]

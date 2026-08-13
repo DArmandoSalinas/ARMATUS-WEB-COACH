@@ -57,7 +57,9 @@ Reply JSON only: {"match":boolean,"depicted":"what the image actually shows","re
 match=false if FAIL IF applies.
 match=false if there is ANY text, letters, labels, titles, captions, or gibberish in the image.
 match=false if a shoulder-press machine is drawn reclined, behind-the-neck, or as a row.
-When unsure between press vs row, match=false.`,
+When unsure between press vs row, match=false.
+When unsure between bear plank vs high plank, match=false.
+When unsure between side kick vs front kick, match=false.`,
         },
         {
           role: "user",

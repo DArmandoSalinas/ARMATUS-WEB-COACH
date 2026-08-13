@@ -7,6 +7,7 @@ import type { Exercise, Routine } from "@/lib/types";
 import type { PdfVariant } from "@/lib/pdf/downloadPdf";
 import { formatDoseCard, whatsappShareUrl } from "@/lib/doseCard";
 import { fillMissingBocetos } from "@/lib/fillBocetosClient";
+import { isStaleLibraryBoceto } from "@/lib/bocetoMatch";
 import { fetchJson } from "@/lib/http";
 import { tx } from "@/lib/i18n";
 import { useStudioStore } from "@/lib/store";
@@ -102,14 +103,14 @@ export function RoutinePreview({
 
   useEffect(() => {
     if (!editable || athleteView) return;
-    if (!live.exercises.some((ex) => !ex.imageDataUrl)) return;
+    const needsFill = (ex: (typeof live.exercises)[number]) =>
+      !ex.imageDataUrl || isStaleLibraryBoceto(ex);
+    if (!live.exercises.some(needsFill)) return;
     const snapshot = live;
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (cancelled) return;
-      const pendingIds = snapshot.exercises
-        .filter((ex) => !ex.imageDataUrl)
-        .map((ex) => ex.id);
+      const pendingIds = snapshot.exercises.filter(needsFill).map((ex) => ex.id);
       if (pendingIds.length > 0) {
         setBusyMap((m) => {
           const next = { ...m };

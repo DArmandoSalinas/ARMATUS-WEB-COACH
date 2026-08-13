@@ -146,7 +146,7 @@ export function attachSupportLinksFromPrompt(
     const segment = lower.slice(prevEnd, urlIdx);
 
     let bestId: string | null = null;
-    let bestScore = 0;
+    let bestScore = Number.NEGATIVE_INFINITY;
 
     for (const ex of exercises) {
       const tokens = [
@@ -163,14 +163,17 @@ export function attachSupportLinksFromPrompt(
         nearest = Math.min(nearest, segment.length - idx);
       }
       if (!hits) continue;
-      const score = hits * 1000 - nearest;
+      // Prefer the name sitting next to the URL. Token-count used to steal
+      // a Bear-plank short because "press / pecho / inclinado" hit more
+      // times earlier in the same segment.
+      const score = -nearest + hits;
       if (score > bestScore) {
         bestScore = score;
         bestId = ex.id;
       }
     }
 
-    if (!bestId || bestScore < 900) continue;
+    if (!bestId) continue;
     // One coach video per exercise (except hip siblings sharing below)
     if ((assignments.get(bestId) ?? []).length > 0) continue;
     assignments.set(bestId, [url]);

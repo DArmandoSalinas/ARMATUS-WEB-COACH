@@ -100,6 +100,18 @@ export type BocetoKey =
   | 'openbook'
   | 'invertedrow'
   | 'latpulldown'
+  | 'treadmillwalk'
+  | 'toetouch'
+  | 'sidekick'
+  | 'backkick'
+  | 'lyingabduction'
+  | 'bander'
+  | 'bandir'
+  | 'wallpushup'
+  | 'machineshoulderpress'
+  | 'inclinedbpress'
+  | 'bearplank'
+  | 'legpresscalf'
 
 /** Patterns where a larger technique boceto helps in the coaching guide. */
 const TECHNIQUE_HEAVY: ReadonlySet<BocetoKey> = new Set([
@@ -146,6 +158,12 @@ const TECHNIQUE_HEAVY: ReadonlySet<BocetoKey> = new Set([
   'burpee',
   'skierg',
   'bearcrawl',
+  'machineshoulderpress',
+  'inclinedbpress',
+  'bearplank',
+  'wallpushup',
+  'legpresscalf',
+  'legpress',
 ]);
 
 type BocetoRule = {
@@ -160,6 +178,111 @@ type BocetoRule = {
 
 /** Specific patterns first — order matters. */
 const RULES: BocetoRule[] = [
+  {
+    key: 'treadmillwalk',
+    patterns: [
+      /\btreadmill\s*walk/i,
+      /\bcaminata\s+(en\s+)?(caminadora|cinta)/i,
+      /\bcinta\s+(de\s+)?caminar/i,
+      /\bwalking\s+on\s+(a\s+)?treadmill/i,
+    ],
+  },
+  {
+    key: 'toetouch',
+    patterns: [
+      /\btoe\s*touch/i,
+      /\btocar\s+la\s+punta/i,
+      /\bpunta\s+de\s+los\s+pies/i,
+    ],
+  },
+  {
+    key: 'sidekick',
+    patterns: [
+      /\bpatada\s+lateral/i,
+      /\bside\s+(leg\s+)?kick/i,
+      /\blateral\s+kick/i,
+    ],
+  },
+  {
+    key: 'backkick',
+    patterns: [
+      /\bpatada\s+hacia\s+atr[aá]s/i,
+      /\bback\s+(leg\s+)?kick/i,
+      /\bstanding\s+glute\s*kick/i,
+    ],
+  },
+  {
+    key: 'lyingabduction',
+    patterns: [
+      /\babducciones?\s+acostad/i,
+      /\blying\s+abduct/i,
+      /\bside[\s-]?lying\s+(hip\s+)?abduct/i,
+    ],
+  },
+  {
+    key: 'bander',
+    patterns: [
+      /rotaci[oó]n\s+externa.{0,48}(banda|liga|band)/i,
+      /(banda|liga|band).{0,48}rotaci[oó]n\s+externa/i,
+      /band\s+external\s*rotation/i,
+      /external\s*rotation.{0,24}(band|liga)/i,
+    ],
+  },
+  {
+    key: 'bandir',
+    patterns: [
+      /rotaci[oó]n\s+interna.{0,48}(banda|liga|band)/i,
+      /(banda|liga|band).{0,48}rotaci[oó]n\s+interna/i,
+      /band\s+internal\s*rotation/i,
+      /internal\s*rotation.{0,24}(band|liga)/i,
+    ],
+  },
+  {
+    key: 'wallpushup',
+    patterns: [
+      /\bmedias?\s+lagartijas?.*pared/i,
+      /\blagartijas?\s+en\s+la\s+pared/i,
+      /\bwall\s*(half\s*)?push[- ]?ups?/i,
+      /\bhalf\s+push[- ]?ups?\s+on\s+(the\s+)?wall/i,
+    ],
+  },
+  {
+    key: 'machineshoulderpress',
+    patterns: [
+      /press\s+de\s+hombro.{0,32}m[aá]quina/i,
+      /m[aá]quina.{0,32}press\s+de\s+hombro/i,
+      /shoulder\s*press\s*machine/i,
+      /machine\s*shoulder\s*press/i,
+    ],
+  },
+  {
+    key: 'inclinedbpress',
+    patterns: [
+      /press\s+de\s+pecho\s+inclinado.{0,32}mancuernas/i,
+      /press\s+inclinado.{0,32}mancuernas/i,
+      /incline\s+(dumbbell|db)\s*(bench\s*)?press/i,
+      /(dumbbell|db)\s+incline\s*(bench\s*)?press/i,
+    ],
+  },
+  {
+    key: 'bearplank',
+    patterns: [
+      /\bbear\s*plank\b/i,
+      /\bbear\s*hold\b/i,
+      /\bplancha\s+(del?\s+)?oso\b/i,
+      /\bplancha\s+oso\b/i,
+    ],
+  },
+  {
+    key: 'legpresscalf',
+    patterns: [
+      /pantorrilla.{0,32}leg\s*press/i,
+      /pantorrilla.{0,32}prensa/i,
+      /calf.{0,32}leg\s*press/i,
+      /leg\s*press.{0,32}calf/i,
+      /prensa.{0,32}(pantorrilla|gemelo)/i,
+    ],
+  },
   {
     key: 'turkish',
     patterns: [
@@ -341,6 +464,9 @@ const RULES: BocetoRule[] = [
       /\bpuente\s+unipodal\b/i,
       /\bpuente\s+(a\s+)?una\s+pierna\b/i,
       /\bsingle[- ]?leg\s+bridge\b/i,
+      /\bpuentes?\s+en\s+el\s+piso\b/i,
+      /\bfloor\s*bridges?\b/i,
+      /\bhip\s*bridge\b/i,
     ],
   },
   {
@@ -374,7 +500,9 @@ const RULES: BocetoRule[] = [
     ],
   },
   {
+    // Generic stretch JPG is not a toe-touch, kick, or named drill.
     key: 'mobility',
+    strength: 'weak',
     patterns: [
       /\bmobility\b/i,
       /\bmovilidad\b/i,
@@ -605,8 +733,8 @@ const RULES: BocetoRule[] = [
   {
     key: 'legextension',
     patterns: [
-      /\bleg\s*extension\b/i,
-      /\bextensi[oó]n\s+(de\s+)?cu[aá]driceps?\b/i,
+      /\bleg\s*extensions?\b/i,
+      /\bextensi[oó]n(?:es)?\s+(de\s+)?cu[aá]driceps?\b/i,
       /\bextensi[oó]n\s+de\s+piernas?\b/i,
       /\bquad\s*extension\b/i,
     ],
@@ -658,7 +786,7 @@ const RULES: BocetoRule[] = [
     patterns: [
       /\bhip\s*abduct/i,
       /\babductor\b/i,
-      /\babducci[oó]n\b/i,
+      /\babducci[oó]n(?:es)?\b/i,
       /\babductores?\b/i,
       /\bm[aá]quina\s+de\s+abduc/i,
       /\bfire\s*hydrant\b/i,
@@ -1343,11 +1471,50 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\blunge/i,
     /\bpiernas?\s+de\s+un\s+lado\b/i,
     /\bside[\s-]?to[\s-]?side\b/i,
+    /\btocar\s+la\s+punta/i,
+    /\btoe\s*touch/i,
+    /\bpatada\b/i,
+    /\bkick\b/i,
   ],
   hip90: [/\bcable\b/i, /\bpolea\b/i, /\brow\b/i, /\bremo\b/i, /\bbarra\b/i],
   latpulldown: [/\bpull[- ]?ups?\b/i, /\bchin[- ]?ups?\b/i, /\bdominadas?\b/i],
   curl: [/\bm[aá]quina\b/i, /\bcable\b/i, /\bpolea\b/i],
   lateral: [/\bcable\b/i, /\bpolea\b/i, /\bm[aá]quina\b/i],
+  // Asset: running / sprint — not a treadmill walk
+  run: [
+    /\bwalk(?:ing)?\b/i,
+    /\bcaminata\b/i,
+    /\bcaminadora\b/i,
+    /\bpaseo\b/i,
+  ],
+  // Asset: floor push-up — not wall / knee / half
+  pushup: [
+    /\bpared\b/i,
+    /\bwall\b/i,
+    /\bmedias?\b/i,
+    /\bhalf\b/i,
+    /\bde\s+rodillas\b/i,
+    /\bknee\b/i,
+  ],
+  // Asset: prone plank — not bear plank / side plank variants already weak
+  plank: [
+    /\bbear\b/i,
+    /\boso\b/i,
+    /\blateral\b/i,
+    /\bside\s*plank\b/i,
+  ],
+  // Asset: standing / seated calf raise — not calf on the leg-press sled
+  soleus: [
+    /\bleg\s*press\b/i,
+    /\bprensa\b/i,
+  ],
+  // Asset: standing abductor machine — not side-lying
+  abductor: [
+    /\bacostado\b/i,
+    /\btumbado\b/i,
+    /\blying\b/i,
+    /\bside[\s-]?lying\b/i,
+  ],
 };
 
 export type BocetoTextContext = {
@@ -1442,6 +1609,42 @@ export function resolveBocetoPath(
 ): string | null {
   const key = resolveBocetoKey(name, ctx);
   return key ? bocetoPublicPath(key) : null;
+}
+
+const LIBRARY_PATH_RE = /(?:^|\/)bocetos\/([a-z0-9]+)\.jpe?g(?:\?|$)/i;
+
+/** Library JPG key baked into an image URL, if any. */
+export function libraryKeyFromImageUrl(
+  url: string | undefined | null,
+): BocetoKey | null {
+  if (!url || url.startsWith("data:") || url.includes("/api/blob")) return null;
+  const m = url.match(LIBRARY_PATH_RE);
+  if (!m) return null;
+  const key = m[1].toLowerCase();
+  return key in BOCETO_LABELS ? (key as BocetoKey) : null;
+}
+
+/**
+ * True when the card is showing a library JPG that no longer matches the title.
+ * Wrong reuse (walk → run.jpg, wall push-up → pushup.jpg) must be redrawn.
+ */
+export function isStaleLibraryBoceto(ex: {
+  name: string;
+  nameEn?: string | null;
+  sketchCaption?: string | null;
+  intro?: string | null;
+  purpose?: string | null;
+  imageDataUrl?: string | null;
+}): boolean {
+  const stored = libraryKeyFromImageUrl(ex.imageDataUrl);
+  if (!stored) return false;
+  const ctx: BocetoTextContext = {
+    nameEn: ex.nameEn,
+    sketchCaption: ex.sketchCaption,
+    intro: ex.intro,
+    purpose: ex.purpose,
+  };
+  return resolveBocetoKey(ex.name, ctx) !== stored;
 }
 
 export function resolveBocetoCaption(
@@ -1541,4 +1744,16 @@ export const BOCETO_LABELS: Record<BocetoKey, { en: string; es: string }> = {
   openbook: { en: 'Open book', es: 'Libro abierto' },
   invertedrow: { en: 'Inverted row', es: 'Remo invertido' },
   latpulldown: { en: 'Lat pulldown', es: 'Jalón al pecho' },
+  treadmillwalk: { en: 'Treadmill walk', es: 'Caminata en caminadora' },
+  toetouch: { en: 'Toe touch', es: 'Tocar la punta de los pies' },
+  sidekick: { en: 'Side kick', es: 'Patada lateral' },
+  backkick: { en: 'Back kick', es: 'Patada hacia atrás' },
+  lyingabduction: { en: 'Lying abduction', es: 'Abducciones acostado' },
+  bander: { en: 'Band external rotation', es: 'Rotación externa con banda' },
+  bandir: { en: 'Band internal rotation', es: 'Rotación interna con banda' },
+  wallpushup: { en: 'Wall half push-up', es: 'Medias lagartijas en la pared' },
+  machineshoulderpress: { en: 'Shoulder press machine', es: 'Press de hombro en máquina' },
+  inclinedbpress: { en: 'Incline dumbbell press', es: 'Press de pecho inclinado con mancuernas' },
+  bearplank: { en: 'Bear plank', es: 'Plancha oso' },
+  legpresscalf: { en: 'Calf raise on leg press', es: 'Pantorrilla en leg press' },
 };

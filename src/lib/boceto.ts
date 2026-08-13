@@ -48,8 +48,7 @@ function toPromptContext(input: BocetoResolveInput): BocetoPromptContext {
 
 /**
  * Prefer ARMATUS library boceto only on a STRONG name match.
- * Weak/family aliases and unmatched names → AI with rich coaching context
- * + library character references so the same athlete appears.
+ * Unmatched → AI from a coach-style SCENE (no character-ref poses).
  */
 export async function resolveExerciseBoceto(
   input: BocetoResolveInput | string,

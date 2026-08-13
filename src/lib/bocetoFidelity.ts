@@ -33,6 +33,16 @@ export type LiftKind =
   | "pullup"
   | "shoulder-rotation"
   | "floor-mobility"
+  | "wall-pushup"
+  | "bear-plank"
+  | "glute-bridge"
+  | "toe-touch"
+  | "side-kick"
+  | "back-kick"
+  | "lying-abduction"
+  | "treadmill-walk"
+  | "calf-raise"
+  | "leg-extension"
   | "other";
 
 export type LiftClass = {
@@ -122,6 +132,26 @@ function isShoulderRotationTitle(t: string): boolean {
 
 function detectKind(t: string): LiftKind {
   if (FLOOR_RE.test(t)) return "floor-mobility";
+  if (/medias?\s+lagartijas?.*pared|wall\s*(half\s*)?push/i.test(t)) {
+    return "wall-pushup";
+  }
+  if (/\bbear\s*plank\b|plancha\s+(del?\s+)?oso\b/i.test(t)) return "bear-plank";
+  if (/puentes?\s+en\s+el\s+piso|floor\s*bridges?|glute\s*bridge/i.test(t)) {
+    return "glute-bridge";
+  }
+  if (/tocar\s+la\s+punta|toe\s*touch/i.test(t)) return "toe-touch";
+  if (/patada\s+lateral|side\s+leg\s+kick/i.test(t)) return "side-kick";
+  if (/patada\s+hacia\s+atr[aá]s|back\s+leg\s+kick/i.test(t)) return "back-kick";
+  if (/abducciones?\s+acostado|lying\s+abduct/i.test(t)) {
+    return "lying-abduction";
+  }
+  if (/caminata\s+en\s+caminadora|treadmill\s*walk/i.test(t)) {
+    return "treadmill-walk";
+  }
+  if (/pantorrilla|calf\s*(raise|press)/i.test(t)) return "calf-raise";
+  if (/extensiones?\s+de\s+cu[aá]driceps?|leg\s*extensions?/i.test(t)) {
+    return "leg-extension";
+  }
   if (isShoulderRotationTitle(t)) return "shoulder-rotation";
   if (SHOULDER_PRESS_RE.test(t)) return "shoulder-press";
   if (CHEST_PRESS_RE.test(t)) return "chest-press";
@@ -144,8 +174,19 @@ function movementForKind(kind: LiftKind): MovementFamily {
       return "vertical-pull";
     case "shoulder-rotation":
       return "rotation";
+    case "wall-pushup":
+      return "horizontal-push";
     case "floor-mobility":
+    case "glute-bridge":
+    case "lying-abduction":
+    case "toe-touch":
+    case "bear-plank":
       return "floor-mobility";
+    case "side-kick":
+    case "back-kick":
+    case "treadmill-walk":
+    case "calf-raise":
+    case "leg-extension":
     default:
       return "other";
   }
@@ -161,6 +202,22 @@ function detectEquipmentFamily(t: string, kind: LiftKind): EquipmentFamily {
   const barbell = /\b(barra|barbell|olympic\s*bar)\b/i.test(t);
   const band = /\b(banda|band|liga|ligas|theraband|elastic[oa]?s?)\b/i.test(t);
 
+  if (kind === "calf-raise" && /\bleg\s*press|prensa\b/i.test(t)) {
+    return "machine";
+  }
+  if (kind === "leg-extension") return "machine";
+  if (
+    kind === "wall-pushup" ||
+    kind === "bear-plank" ||
+    kind === "glute-bridge" ||
+    kind === "toe-touch" ||
+    kind === "side-kick" ||
+    kind === "back-kick" ||
+    kind === "lying-abduction" ||
+    kind === "treadmill-walk"
+  ) {
+    return "bodyweight";
+  }
   if (kind === "shoulder-press" || kind === "chest-press") {
     if (machine) return "machine";
     if (dumbbell) return "dumbbell";
@@ -473,9 +530,23 @@ export function libraryAssetConflictsWithLift(
   ) {
     return true;
   }
+  if (cls.kind === "wall-pushup" && key === "pushup") return true;
+  if (cls.kind === "bear-plank" && (key === "plank" || key === "bearcrawl")) {
+    return true;
+  }
+  if (cls.kind === "treadmill-walk" && key === "run") return true;
+  if (cls.kind === "toe-touch" && key === "mobility") return true;
+  if (cls.kind === "calf-raise" && cls.equipment === "machine" && key === "soleus") {
+    return true;
+  }
+  if ((cls.kind === "side-kick" || cls.kind === "back-kick") && key === "kickback") {
+    return true;
+  }
+  if (cls.kind === "lying-abduction" && key === "abductor") return true;
   if (
     cls.kind !== "floor-mobility" &&
     cls.kind !== "other" &&
+    !(cls.kind === "glute-bridge" && key === "glutebridge") &&
     inKeys(key, FLOOR_LIBRARY_KEYS)
   ) {
     return true;
@@ -484,22 +555,16 @@ export function libraryAssetConflictsWithLift(
 }
 
 /**
- * Image-to-image refs copy the SOURCE POSE (squat, pull-up, push-up).
- * Presses, machines, floor drills, and cuff work must generate from text
- * so a hanging pull cannot become a fake seated row.
+ * Image-to-image refs copy the SOURCE POSE. A squat/pull-up photo
+ * turned a machine press into a seated row. Feed the model with SCENE
+ * text instead — that is what a coach would type into ChatGPT.
  */
-export function shouldSkipCharacterReferences(cls: LiftClass): boolean {
-  return (
-    cls.movement === "vertical-push" ||
-    cls.movement === "horizontal-push" ||
-    cls.kind === "floor-mobility" ||
-    cls.kind === "shoulder-rotation" ||
-    cls.equipment === "machine"
-  );
+export function shouldSkipCharacterReferences(_cls: LiftClass): boolean {
+  return true;
 }
 
-export function isPoseSensitiveLift(cls: LiftClass): boolean {
-  return cls.kind !== "other";
+export function isPoseSensitiveLift(_cls: LiftClass): boolean {
+  return true;
 }
 
 const PULL_LEAK_RE =
@@ -569,13 +634,16 @@ export function imageCoachingForPrompt(
   return { caption, steps, muscles };
 }
 
-export function liftLabelEn(cls: LiftClass): string {
+export function liftLabelEn(cls: LiftClass, title = ""): string {
   switch (cls.kind) {
     case "shoulder-press":
       return cls.equipment === "machine"
         ? "seated machine shoulder press"
         : "overhead shoulder press";
     case "chest-press":
+      if (/inclin/i.test(title) && cls.equipment === "dumbbell") {
+        return "incline dumbbell chest press";
+      }
       return cls.equipment === "machine"
         ? "seated machine chest press"
         : "bench / chest press";
@@ -586,15 +654,97 @@ export function liftLabelEn(cls: LiftClass): string {
     case "pullup":
       return "pull-up";
     case "shoulder-rotation":
+      if (isInternalRotationTitle(title)) return "standing band internal rotation";
+      if (isExternalRotationTitle(title)) return "standing band external rotation";
       return "standing band shoulder rotation";
+    case "wall-pushup":
+      return "wall half push-up";
+    case "bear-plank":
+      return "bear plank";
+    case "glute-bridge":
+      return "glute bridge on the floor";
+    case "toe-touch":
+      return "standing toe-touch hinge";
+    case "side-kick":
+      return "standing side kick";
+    case "back-kick":
+      return "standing back kick";
+    case "lying-abduction":
+      return "side-lying hip abduction";
+    case "treadmill-walk":
+      return "walking on a treadmill";
+    case "calf-raise":
+      return cls.equipment === "machine"
+        ? "calf raise on the leg press"
+        : "calf raise";
+    case "leg-extension":
+      return "seated leg extension machine";
     case "floor-mobility":
       return "floor mobility drill";
     default:
-      return "the named lift";
+      return englishHintFromTitle(title) || "the named lift";
   }
 }
 
-export function visualPoseLock(cls: LiftClass): string {
+function isInternalRotationTitle(title: string): boolean {
+  return (
+    /\b(interna|internal\s*rotation)\b/i.test(title) &&
+    !/\b(externa|external\s*rotation)\b/i.test(title)
+  );
+}
+
+function isExternalRotationTitle(title: string): boolean {
+  return /\b(externa|external\s*rotation)\b/i.test(title);
+}
+
+function englishHintFromTitle(title: string): string {
+  const parts = title
+    .split("|")
+    .map((s) => s.replace(/[()]/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const en =
+    parts.find((s) => /[a-z]/i.test(s) && !/[áéíóúñ]/i.test(s)) || parts[0] || "";
+  return en.slice(0, 90);
+}
+
+function sceneForbids(title: string, cls: LiftClass): string {
+  const lines = [
+    "Never draw letters, numbers, arrows-with-captions, or a title card.",
+  ];
+  const bodyweight =
+    cls.equipment === "bodyweight" ||
+    cls.kind === "toe-touch" ||
+    cls.kind === "side-kick" ||
+    cls.kind === "back-kick" ||
+    cls.kind === "bear-plank" ||
+    cls.kind === "wall-pushup" ||
+    cls.kind === "glute-bridge" ||
+    cls.kind === "lying-abduction";
+  if (bodyweight) {
+    lines.push("NO gym machines, NO cable tower, NO extra bench in the background.");
+  } else if (!/\b(polea|cables?)\b/i.test(title) && cls.equipment !== "cable") {
+    lines.push("NO cable tower, NO D-handle, NO ankle cuff unless the pose names them.");
+  }
+  if (cls.kind === "shoulder-rotation" || cls.equipment === "band") {
+    lines.push("Resistance is a thin elastic BAND — not a pin-loaded cable stack.");
+  }
+  return lines.join(" ");
+}
+
+/**
+ * The brief a coach would type into ChatGPT. English pose + equipment.
+ * Never a Spanish title card — the model paints those as infographic text.
+ */
+export function directorShot(cls: LiftClass, title = ""): string {
+  const label = liftLabelEn(cls, title);
+  const pose = visualPoseLock(cls, title);
+  return `A coach asked an image model for ONE silent sketch of: ${label}.
+${pose}
+${sceneForbids(title, cls)}
+Frame: landscape ~3:2, one athlete + only the named equipment, centered. The rest of the canvas is empty black.`;
+}
+
+export function visualPoseLock(cls: LiftClass, title = ""): string {
   if (cls.kind === "shoulder-press" && cls.equipment === "machine") {
     return `MID-REP seated machine shoulder press, 3/4 front-side view.
 Athlete sits UPRIGHT (torso vertical), whole back glued to the pad — not reclined, not hunched, not standing.
@@ -611,7 +761,43 @@ Athlete + machine centered on pure black. The rest of the frame is empty black.`
     return `MID-REP seated chest-press machine: upright on the pad, handles at chest height, PUSHING FORWARD. Elbows ~90°. Not a row.`;
   }
   if (cls.kind === "chest-press") {
+    if (/inclin/i.test(title) && cls.equipment === "dumbbell") {
+      return `MID-REP incline dumbbell press: lying on an INCLINE bench (~30–45°), TWO separate dumbbells (not a barbell), pressing up from the upper chest. Wrists stacked. Not flat bench, not a row, not a machine.`;
+    }
     return `MID-REP bench press: lying supine, pressing the load up off the chest.`;
+  }
+  if (cls.kind === "wall-pushup") {
+    return `Standing WALL push-up: hands on a wall at chest height, body in a straight line, elbows bending as the chest moves toward the wall. Not a floor push-up, not a plank.`;
+  }
+  if (cls.kind === "bear-plank") {
+    return `BEAR PLANK: quadruped, hands under shoulders, knees under hips, KNEES HOVERING a few cm off the floor. Back flat. Not a prone forearm plank, not a bear crawl.`;
+  }
+  if (cls.kind === "glute-bridge") {
+    return `GLUTE BRIDGE on the floor: lying supine, knees bent, feet flat, hips pressing up until shoulders-hips-knees align. No barbell hip thrust bench.`;
+  }
+  if (cls.kind === "toe-touch") {
+    return `Standing toe-touch: feet together, knees STRAIGHT, hinging at the hips to reach toward the toes. Not a squat, not a floor stretch.`;
+  }
+  if (cls.kind === "side-kick") {
+    return `Standing SIDE KICK: torso upright, one leg kicking straight out to the side. Not a cable kickback, not a lying abduction.`;
+  }
+  if (cls.kind === "back-kick") {
+    return `Standing BACK KICK: torso upright, one leg kicking straight back (glute). Not a quadruped donkey kick, not a row.`;
+  }
+  if (cls.kind === "lying-abduction") {
+    return `SIDE-LYING hip abduction: lying on one side, top leg lifting in a half-circle. Not a standing abductor machine.`;
+  }
+  if (cls.kind === "treadmill-walk") {
+    return `WALKING on a treadmill, upright posture, walking pace — not sprinting, not running.`;
+  }
+  if (cls.kind === "calf-raise" && cls.equipment === "machine") {
+    return `Calf raise ON THE LEG PRESS: seated in the sled, only the balls of the feet on the platform, ankles extending. Not a standing calf raise, not a full leg press.`;
+  }
+  if (cls.kind === "calf-raise") {
+    return `Standing or seated calf raise: ankles extending, heels up.`;
+  }
+  if (cls.kind === "leg-extension") {
+    return `SEATED LEG EXTENSION machine: pad on the shins, knees extending until the legs are straight. Not a leg press.`;
   }
   if (cls.kind === "row") {
     return `MID-REP row: athlete PULLING the load toward the torso.`;
@@ -623,6 +809,12 @@ Athlete + machine centered on pure black. The rest of the frame is empty black.`
     return `MID-REP pull-up: hanging from a fixed bar, pulling the chest toward the bar.`;
   }
   if (cls.kind === "shoulder-rotation") {
+    if (isInternalRotationTitle(title)) {
+      return `Standing INTERNAL rotation: elbow glued at 90° to the ribs. A thin band comes across the body. Forearm rotating IN toward the belly. Not external rotation, not a press, not a row.`;
+    }
+    if (isExternalRotationTitle(title)) {
+      return `Standing EXTERNAL rotation, camera slightly BEHIND. Elbow glued at 90° to the ribs. Fist pointing OUT away from the belly, band anchored on the same side. Empty space between the hand and the stomach. Not internal rotation, not a press, not a row.`;
+    }
     return `Standing, elbow glued at 90° to the ribs, rotating the forearm against a band. Not a press, not a row.`;
   }
   if (cls.kind === "floor-mobility") {
@@ -637,8 +829,8 @@ export type LiftQaSpec = {
   failIf: string;
 };
 
-export function qaSpecForLift(cls: LiftClass, _title?: string): LiftQaSpec {
-  const lift = liftLabelEn(cls);
+export function qaSpecForLift(cls: LiftClass, title = ""): LiftQaSpec {
+  const lift = liftLabelEn(cls, title);
   const noText =
     "ANY letters, words, titles, captions, muscle legends, infographic columns, watermarks, numbers";
   if (cls.kind === "shoulder-press" && cls.equipment === "machine") {
@@ -693,10 +885,86 @@ export function qaSpecForLift(cls: LiftClass, _title?: string): LiftQaSpec {
     };
   }
   if (cls.kind === "shoulder-rotation") {
+    const ir = isInternalRotationTitle(title);
+    const er = isExternalRotationTitle(title);
     return {
-      mustShow: `silent sketch of standing IR/ER, elbow at 90° at the side`,
+      mustShow: ir
+        ? `silent sketch of standing INTERNAL rotation, elbow at 90°, forearm toward the belly`
+        : er
+          ? `silent sketch of standing EXTERNAL rotation, elbow at 90°, fist pointing out away from the belly`
+          : `silent sketch of standing IR/ER, elbow at 90° at the side`,
       mustNotShow: `${noText}; shoulder press machine; seated row; overhead press`,
       failIf: "there is ANY text, OR it is a press or a row",
+    };
+  }
+  if (cls.kind === "bear-plank") {
+    return {
+      mustShow: `silent sketch of a bear plank: knees bent ~90°, hovering a few cm off the floor`,
+      mustNotShow: `${noText}; long high plank with straight legs; bear crawl walking`,
+      failIf: "there is ANY text, OR the legs are straight in a high plank",
+    };
+  }
+  if (cls.kind === "wall-pushup") {
+    return {
+      mustShow: `silent sketch of a standing wall push-up, hands on a wall`,
+      mustNotShow: `${noText}; floor push-up; prone plank`,
+      failIf: "there is ANY text, OR the athlete is on the floor",
+    };
+  }
+  if (cls.kind === "side-kick") {
+    return {
+      mustShow: `silent sketch of a standing kick OUT TO THE SIDE`,
+      mustNotShow: `${noText}; front kick; cable ankle cuff; lying abduction`,
+      failIf: "there is ANY text, OR it is a front kick or a cable kick",
+    };
+  }
+  if (cls.kind === "back-kick") {
+    return {
+      mustShow: `silent sketch of a standing kick STRAIGHT BACK`,
+      mustNotShow: `${noText}; cable kickback machine; quadruped donkey kick`,
+      failIf: "there is ANY text, OR it is a cable machine kickback",
+    };
+  }
+  if (cls.kind === "toe-touch") {
+    return {
+      mustShow: `silent sketch of a standing toe-touch, knees straight, hinging to the toes`,
+      mustNotShow: `${noText}; extra gym machines; squat`,
+      failIf: "there is ANY text, OR a cable machine is in the frame",
+    };
+  }
+  if (cls.kind === "treadmill-walk") {
+    return {
+      mustShow: `silent sketch of walking on a treadmill`,
+      mustNotShow: `${noText}; all-out sprint; running with no treadmill`,
+      failIf: "there is ANY text, OR there is no treadmill",
+    };
+  }
+  if (cls.kind === "lying-abduction") {
+    return {
+      mustShow: `silent sketch of side-lying hip abduction on the floor`,
+      mustNotShow: `${noText}; standing abductor machine; cable cuff`,
+      failIf: "there is ANY text, OR it is a standing machine",
+    };
+  }
+  if (cls.kind === "glute-bridge") {
+    return {
+      mustShow: `silent sketch of a glute bridge on the floor`,
+      mustNotShow: `${noText}; barbell hip thrust bench`,
+      failIf: "there is ANY text, OR it is a loaded hip thrust on a bench",
+    };
+  }
+  if (cls.kind === "calf-raise" && cls.equipment === "machine") {
+    return {
+      mustShow: `silent sketch of a calf raise on the leg-press sled, balls of the feet on the plate`,
+      mustNotShow: `${noText}; standing calf raise; full leg press with feet centered`,
+      failIf: "there is ANY text, OR it is a standing calf raise",
+    };
+  }
+  if (cls.kind === "leg-extension") {
+    return {
+      mustShow: `silent sketch of a seated leg-extension machine`,
+      mustNotShow: `${noText}; leg press sled`,
+      failIf: "there is ANY text, OR it is a leg press",
     };
   }
   if (cls.kind === "floor-mobility") {
@@ -720,11 +988,12 @@ export function imageHardLockBlock(opts: {
   brief: BriefSlice;
 }): string {
   const qa = qaSpecForLift(opts.cls, opts.title);
-  const lift = liftLabelEn(opts.cls);
+  const lift = liftLabelEn(opts.cls, opts.title);
   return `=== HARD LOCK (read first; violating this = FAILED image) ===
 SILENT SKETCH: the output pixels contain ZERO letters, words, numbers, labels, arrows-with-captions, or legends. If a coach can read anything, you FAILED.
 LIFT TO DEPICT (do not write this): ${lift}
-POSE: ${visualPoseLock(opts.cls)}
+SCENE:
+${directorShot(opts.cls, opts.title)}
 MOVEMENT: ${opts.brief.movementPattern}
 EQUIPMENT: ${opts.brief.equipment}
 MUST NOT DRAW: ${qa.mustNotShow}

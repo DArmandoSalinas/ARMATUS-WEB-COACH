@@ -1,4 +1,4 @@
-import { resolveBocetoPath } from "./bocetoMatch";
+import { isStaleLibraryBoceto, resolveBocetoPath } from "./bocetoMatch";
 import { fetchJson } from "./http";
 import { isOpenAiCreditsError } from "./openaiError";
 import type { Exercise, Routine } from "./types";
@@ -63,11 +63,18 @@ export async function fillMissingBocetos(
     const prev = prevById.get(ex.id);
     const mustRegen = forceAll || forceIds.has(ex.id);
 
-    if (!mustRegen && prev?.imageDataUrl) {
-      exercises[i] = { ...ex, imageDataUrl: prev.imageDataUrl };
-      continue;
+    if (!mustRegen) {
+      const keptUrl = prev?.imageDataUrl || ex.imageDataUrl;
+      if (
+        keptUrl &&
+        !isStaleLibraryBoceto({ ...ex, imageDataUrl: keptUrl })
+      ) {
+        if (prev?.imageDataUrl) {
+          exercises[i] = { ...ex, imageDataUrl: prev.imageDataUrl };
+        }
+        continue;
+      }
     }
-    if (!mustRegen && ex.imageDataUrl) continue;
 
     const skipLibrary = mustRegen && opts?.forceAi === true;
     if (!skipLibrary) {

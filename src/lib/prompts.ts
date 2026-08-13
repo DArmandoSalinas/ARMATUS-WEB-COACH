@@ -157,8 +157,14 @@ Sin emojis. Responde SOLO JSON válido:
 }`;
 
 /**
- * Image prompt: HARD LOCK pose first. Never pass title/caption/steps —
- * the model paints those as infographic text. Output is the athlete only.
+ * Image prompt: SCENE first (what a coach would type into ChatGPT), then style.
+ * Never pass Spanish title / caption / steps — the model paints them as text.
+ *
+ * Pipeline:
+ * 1. classifyLift(title) → movement + equipment
+ * 2. strong library JPG if it is THAT lift
+ * 3. else gpt-image-1 from this prompt (no character-ref poses)
+ * 4. vision QA; one retry if the sketch is the wrong lift or has letters
  */
 export function buildBocetoImagePrompt(ctx: BocetoPromptContext): string {
   const brief = buildVisualBrief(ctx);
@@ -170,6 +176,9 @@ export function buildBocetoImagePrompt(ctx: BocetoPromptContext): string {
   return `ARMATUS Coach Studio — silent neon line-art boceto.
 
 ${imageHardLockBlock({ title, cls, brief })}
+
+=== SCENE (feed this like a human prompt; do not letter it) ===
+Follow HARD LOCK. Draw that scene only.
 
 === NON-NEGOTIABLE ===
 1) THE PICTURE HAS NO TEXT. Not the exercise name, not muscle names, not steps, not gibberish. Athlete + equipment only. The UI already shows the title.

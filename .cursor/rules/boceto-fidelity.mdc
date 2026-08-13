@@ -11,15 +11,18 @@ The sketch is **the athlete + equipment only**. Title, steps, and muscle names l
 ## Pipeline (do not weaken)
 
 1. Classify from the **title** only. Intro/purpose never change movement.
-2. Press = **PUSH**. Machine shoulder press = **upright** seated, mid-rep elbows ~90°, handles at ear height pressing **up**. Not reclined, not behind the neck, not a row.
-3. Image prompt starts with **HARD LOCK** + **SILENT SKETCH**. Never pass title, caption, steps, or muscle lists — the model paints them onto the canvas.
-4. Do not image-to-image from squat/pull-up refs for presses or machines.
-5. Vision QA rejects text-in-image, wrong lift, and bad press form; retries once.
-6. Library JPG only on a strong same-family match.
-7. Run `npm test` after changing matching, briefs, prompts, or generation.
+2. Strong library JPG only when it is **that** lift (walk ≠ run.jpg, bear plank ≠ plank.jpg).
+3. Otherwise `gpt-image-1` from a **SCENE** a coach would type into ChatGPT: English pose + exact equipment + what not to draw. No character-reference images (they copy the wrong pose).
+4. Image prompt starts with **HARD LOCK** + **SILENT SKETCH** + **SCENE**. Never pass Spanish title, caption, steps, or muscle lists — the model paints them onto the canvas.
+5. Vision QA rejects text-in-image and the wrong lift; retries once from text only.
+6. Run `npm test` after changing matching, briefs, prompts, or generation.
+
+Press = **PUSH**. Machine shoulder press = **upright** seated, mid-rep elbows ~90°, handles at ear height pressing **up**. Not reclined, not behind the neck, not a row.
 
 ## Bugs that must not return
 
 - Press drawn as a seated row (`hombro` → band rotation + pull-up ref pose).
 - Infographic text dumped onto the boceto (title, "NO remo", garbled steps).
 - Reclined / behind-the-neck / locked-out machine press.
+- Wrong library JPG: walk ≠ `run.jpg`, wall push-up ≠ `pushup.jpg`, bear plank ≠ `plank.jpg`, calf on the sled ≠ `soleus.jpg`, toe-touch ≠ `mobility.jpg`. Stale library paths must be redrawn.
+- Starved prompt (`the named lift`) with no pose — feed SCENE like a human would.
