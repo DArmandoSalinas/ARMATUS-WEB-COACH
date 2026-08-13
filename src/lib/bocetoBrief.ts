@@ -1,3 +1,10 @@
+import {
+  applyLiftOverride,
+  briefFidelityError,
+  classifyLift,
+  PRESS_NOT_ROW_FORBID,
+} from "./bocetoFidelity";
+
 export type BocetoPromptContext = {
   name: string;
   nameEn?: string | null;
@@ -20,6 +27,8 @@ export type VisualBrief = {
   laterality: "bilateral" | "unilateral-left-or-right" | "unknown";
   /** Body position */
   bodyPosition: string;
+  /** Push vs pull vs rotation — stops press drawings from becoming rows */
+  movementPattern: string;
   /** Short hard lock line for the image model */
   equipmentLockLine: string;
 };
@@ -54,6 +63,43 @@ function hasBarbell(t: string): boolean {
 
 function hasBand(t: string): boolean {
   return /\b(banda|band|liga|ligas|theraband|elastic[oa]?s?)\b/i.test(t);
+}
+
+function hasMachine(t: string): boolean {
+  return /\b(m[aá]quina|machine|selectorizad[oa]|hammer\s*strength|pin[\s-]?loaded)\b/i.test(
+    t,
+  );
+}
+
+function isShoulderPress(t: string): boolean {
+  return /\b(press\s+de\s+hombro|shoulder\s*press|overhead\s*press|press\s*militar|military\s*press|ohp)\b/i.test(
+    t,
+  );
+}
+
+function isChestPress(t: string): boolean {
+  return /\b(press\s+de\s+pecho|press\s+pecho|chest\s*press|bench\s*press|press\s+de\s+banca|press\s*banca)\b/i.test(
+    t,
+  );
+}
+
+/**
+ * Cuff / IR-ER work only.
+ * Never match on bare "hombro" / "shoulder" — that turned machine
+ * shoulder press into a band rotation (then a fake seated row).
+ */
+function isShoulderRotation(t: string): boolean {
+  if (isShoulderPress(t) || isChestPress(t)) return false;
+  if (
+    /\b(rotator\s*cuff|manguito\s+rotador|external\s*rotation|internal\s*rotation|rotaci[oó]n\s+(externa|interna))\b/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  return /\b(rotaci[oó]n(?:\s+de)?\s+(?:el\s+)?hombro|hombro.{0,24}rotaci[oó]n|shoulder\s+rotation|rotation\s+of\s+(?:the\s+)?shoulder)\b/i.test(
+    t,
+  );
 }
 
 /** Floor drills that must never reuse a standing/pulling library JPG. */
@@ -96,14 +142,40 @@ function detectEquipment(text: string): {
     };
   }
 
+  // Title wins: "press de hombro en máquina" is a seated MACHINE PRESS,
+  // never a cable row and never band IR/ER (those used to match on "hombro").
+  if (isShoulderPress(t) && hasMachine(t) && !hasDumbbell(t) && !hasBarbell(t)) {
+    return {
+      equipment:
+        "SEATED SHOULDER PRESS MACHINE (selectorized / guided levers): back against the pad, two machine handles at shoulder height. Athlete PUSHES the handles VERTICALLY OVERHEAD to lockout. Draw the machine frame. Mid-rep = arms extending UP. This is a MACHINE PRESS — not cables, not a row.",
+      forbid: [
+        ...PRESS_NOT_ROW_FORBID,
+        "barbell overhead press",
+        "dumbbells",
+        "cable towers",
+        "polea",
+      ],
+    };
+  }
+
+  if (
+    isChestPress(t) &&
+    hasMachine(t) &&
+    !hasDumbbell(t) &&
+    !hasBarbell(t) &&
+    !/\b(banca|bench)\b/i.test(t)
+  ) {
+    return {
+      equipment:
+        "SEATED CHEST PRESS MACHINE: back against the pad, two machine handles at chest height. Athlete PUSHES the handles FORWARD away from the chest. Draw the machine frame. This is a PRESS — not a seated row.",
+      forbid: [...PRESS_NOT_ROW_FORBID, "barbell", "dumbbells", "cable fly"],
+    };
+  }
+
   // --- Shoulder IR / ER (warm-up default = resistance band) ---
   // Hip rotation (90/90, cadera) is NOT this pattern.
-  if (
-    !isHipContext(t) &&
-    /\b(rotaci[oó]n\s+(externa|interna)|external\s*rotation|internal\s*rotation|rotator\s*cuff|manguito\s+rotador|hombro|shoulder)\b/i.test(
-      t,
-    )
-  ) {
+  // Do NOT match bare "hombro"/"shoulder" — press de hombro ≠ rotación.
+  if (!isHipContext(t) && isShoulderRotation(t)) {
     const isInternal = /\b(interna|internal)\b/i.test(t);
     const isExternal = /\b(externa|external)\b/i.test(t);
     const motion = isInternal
@@ -214,22 +286,26 @@ function detectEquipment(text: string): {
     };
   }
 
-  if (
-    /\b(press\s+de\s+hombro|shoulder\s*press|overhead\s*press|press\s*militar|military\s*press|ohp)\b/i.test(
-      t,
-    ) &&
-    hasDumbbell(t)
-  ) {
+  if (isShoulderPress(t) && hasDumbbell(t)) {
     return {
       equipment:
-        "TWO separate dumbbells pressed overhead (standing or seated as named) — each hand holds its own dumbbell. NO barbell.",
+        "TWO separate dumbbells pressed VERTICALLY overhead (standing or seated as named) — each hand holds its own dumbbell. Arms travel UP. NO barbell. NOT a row.",
       forbid: [
         "barbell",
         "olympic bar",
         "military barbell press",
         "push press with bar",
         "single bar connecting both hands",
+        ...PRESS_NOT_ROW_FORBID,
       ],
+    };
+  }
+
+  if (isShoulderPress(t) && !hasBand(t)) {
+    return {
+      equipment:
+        "OVERHEAD / SHOULDER PRESS: athlete PUSHES the named implement VERTICALLY from the shoulders to lockout above the head. Hands travel UP. This is a PRESS, never a row.",
+      forbid: PRESS_NOT_ROW_FORBID,
     };
   }
 
@@ -345,15 +421,45 @@ function detectLaterality(text: string): VisualBrief["laterality"] {
   return "bilateral";
 }
 
+function detectMovementPattern(text: string): string {
+  if (isShoulderPress(text)) {
+    return "VERTICAL PUSH — load travels UP above the head. NEVER a row, NEVER pulling handles to the chest.";
+  }
+  if (
+    isChestPress(text) ||
+    /\b(push[- ]?up|lagartija|dips?|fondos?)\b/i.test(text)
+  ) {
+    return "PUSH — load travels AWAY from the torso. NEVER a row.";
+  }
+  if (
+    /\b(row|remo|jal[oó]n|pulldown|pull[- ]?up|face\s*pull|chin[- ]?up|dominada)\b/i.test(
+      text,
+    )
+  ) {
+    return "PULL — load travels toward the body.";
+  }
+  if (isShoulderRotation(text)) {
+    return "shoulder rotation with the elbow at 90° — not a press, not a row.";
+  }
+  return "as required by the named exercise";
+}
+
 function detectBodyPosition(text: string): string {
   if (isFloorMobilityText(text)) {
     return "seated on the floor, both knees and hips at ~90°, torso upright — NOT standing, NOT pulling";
   }
+  if (isShoulderPress(text) && hasMachine(text)) {
+    return "SEATED on the shoulder-press machine, back against the pad, pushing handles vertically overhead";
+  }
+  if (isChestPress(text) && hasMachine(text) && !/\b(banca|bench)\b/i.test(text)) {
+    return "SEATED on the chest-press machine, back against the pad, pushing handles forward";
+  }
+  if (isShoulderPress(text)) {
+    return "pressing overhead (standing or seated as named) — NOT a row, NOT pulling";
+  }
   if (
     !isHipContext(text) &&
-    /\b(rotaci[oó]n\s+(externa|interna)|external\s*rotation|internal\s*rotation)\b/i.test(
-      text,
-    ) &&
+    isShoulderRotation(text) &&
     !/\b(tumbado|side[\s-]?lying|sidelying)\b/i.test(text)
   ) {
     return "standing, elbow at side at 90°";
@@ -372,20 +478,34 @@ function detectBodyPosition(text: string): string {
 /**
  * Locks equipment + variation before image generation so the model
  * cannot "creatively" swap pec deck → cables, etc.
+ *
+ * Movement family comes from the TITLE only. Intro/purpose cannot turn
+ * a press into a row or a band rotation.
  */
 export function buildVisualBrief(ctx: BocetoPromptContext): VisualBrief {
   const primaryVariation = pickPrimaryName(ctx.name, ctx.nameEn);
-  const text = `${primaryVariation}\n${blob(ctx)}`;
+  const cls = classifyLift(ctx.name, ctx.nameEn);
+  const full = `${primaryVariation}\n${blob(ctx)}`;
+  // Known lifts: classify off the title so coaching copy cannot contaminate.
+  const text = cls.kind !== "other" ? primaryVariation : full;
   const { equipment, forbid } = detectEquipment(text);
   const bodyPosition = detectBodyPosition(text);
-  return {
+  const movementPattern = detectMovementPattern(text);
+  const brief: VisualBrief = {
     primaryVariation,
     equipment,
     forbidEquipment: forbid,
     laterality: detectLaterality(text),
     bodyPosition,
-    equipmentLockLine: `DRAW ONLY: ${equipment}. DO NOT DRAW: ${forbid.join(", ") || "any other implement"}.`,
+    movementPattern,
+    equipmentLockLine: `DRAW ONLY: ${equipment}. MOVEMENT: ${movementPattern}. BODY: ${bodyPosition}. DO NOT DRAW: ${forbid.join(", ") || "any other implement"}.`,
   };
+  const locked = applyLiftOverride(brief, cls);
+  const err = briefFidelityError(locked, cls);
+  if (err) {
+    console.error("[boceto] fidelity guard:", err, primaryVariation);
+  }
+  return locked;
 }
 
 /** True when refs that depict a barbell (e.g. bench.jpg) would contaminate the edit. */
@@ -398,8 +518,17 @@ export function shouldExcludeBarbellReferences(brief: VisualBrief): boolean {
     e.includes("liga") ||
     e.includes("floor") ||
     e.includes("suelo") ||
+    e.includes("machine") ||
+    e.includes("selectorized") ||
     brief.forbidEquipment.some((f) => /barbell|olympic|cable|row/i.test(f))
   );
+}
+
+/** Presses must not use hanging-pull refs — pullup.jpg becomes a fake seated row. */
+export function shouldExcludePullingReferences(brief: VisualBrief): boolean {
+  if (/\b(rotation|rotaci|pull —)\b/i.test(brief.movementPattern)) return false;
+  const t = `${brief.primaryVariation} ${brief.movementPattern}`.toLowerCase();
+  return /\b(press|push|empuje|overhead|militar|vertical push)\b/i.test(t);
 }
 
 /** Floor drills: do not use hanging-pull / bench refs (they become fake rows). */

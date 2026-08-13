@@ -1,3 +1,8 @@
+import {
+  classifyLift,
+  libraryAssetConflictsWithLift,
+} from "./bocetoFidelity";
+
 /**
  * Maps free-text exercise names → LegRoutine / ARMATUS boceto asset keys.
  * Only returns a key when a real white/orange-on-black sketch exists.
@@ -1182,6 +1187,7 @@ const BARBELL_ASSET_REJECTS = [
   /\bcable\b/i,
   /\bpolea\b/i,
   /\bm[aá]quina\b/i,
+  /\bmachine\b/i,
   /\bsmith\b/i,
   /\bbanda\b/i,
   /\bbands?\b/i,
@@ -1205,6 +1211,9 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bmeadows?\b/i,
     /\bt[\s-]?bar\b/i,
     /\bapoyado\s+en\s+(banco|pecho)\b/i,
+    /\bpress\b/i,
+    /\boverhead\b/i,
+    /\bempuje\b/i,
   ],
   // Asset: bodyweight pull-up on fixed bar
   pullup: [
@@ -1214,7 +1223,9 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bpolea\b/i,
     /\bcable\b/i,
     /\bm[aá]quina\b/i,
+    /\bmachine\b/i,
     /\bassisted\b/i,
+    /\bpress\b/i,
   ],
   // Asset: barbell back / deep squat — NEVER reuse for DB/goblet/front/etc.
   squat: [
@@ -1394,6 +1405,8 @@ export function resolveBocetoKey(
   const match = resolveBocetoMatch(name, ctx);
   if (!match || match.strength !== "strong") return null;
   if (!isCompatibleWithLibraryAsset(match.key, name || "", ctx)) return null;
+  const cls = classifyLift(name || "", ctx?.nameEn);
+  if (libraryAssetConflictsWithLift(match.key, cls)) return null;
   return match.key;
 }
 

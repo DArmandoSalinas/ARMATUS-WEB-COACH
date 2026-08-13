@@ -1,0 +1,23 @@
+---
+description: Boceto images must match the named lift — press ≠ row, title wins, QA rejects mismatches.
+globs: src/lib/boceto*.ts,src/lib/prompts.ts
+alwaysApply: false
+---
+
+# Boceto fidelity
+
+The sketch must depict the **named lift**. A coach catching a press drawn as a row is a product failure.
+
+## Pipeline (do not weaken)
+
+1. Classify from the **title** only (`name` + `nameEn`). Intro/purpose never change movement.
+2. Press = **PUSH**. Machine press = seated machine frame, handles **up** or **forward**. Never cables, never a row.
+3. Image prompt starts with **HARD LOCK**. Classified lifts omit intro/purpose.
+4. Do **not** image-to-image from squat/pull-up/push-up refs for presses, machines, floor drills, or cuff work — those poses leak.
+5. After generation, vision QA must reject a wrong pattern and retry once without refs.
+6. Library JPG only on a strong same-family match. Press never resolves to `row` / `pullup` / `latpulldown` / `invertedrow` / `facepull`.
+7. Run `npm test` after changing matching, briefs, prompts, or generation.
+
+## Bug that must not return
+
+`PRESS DE HOMBRO EN MAQUINA` was drawn as a seated cable row because `hombro` triggered band rotation, intro leaked into the prompt, and a hanging-pull reference copied the pose.

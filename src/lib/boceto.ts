@@ -18,6 +18,12 @@ import {
   isOpenAiCreditsError,
   openaiPublicMessage,
 } from "./openaiError";
+import {
+  classifyLift,
+  isPoseSensitiveLift,
+  shouldSkipCharacterReferences,
+} from "./bocetoFidelity";
+import { qaBocetoImage } from "./bocetoQa";
 
 function openaiClient(): OpenAI | null {
   const key = process.env.OPENAI_API_KEY?.trim();
@@ -175,12 +181,48 @@ async function dataUrlFromOpenAiImage(image: {
 
 async function generateAiBoceto(ctx: BocetoPromptContext): Promise<string> {
   const client = openaiClient();
-  const brief = buildVisualBrief(ctx);
+  const cls = classifyLift(ctx.name, ctx.nameEn);
+  const skipRefs = shouldSkipCharacterReferences(cls);
   const prompt = buildBocetoImagePrompt(ctx);
 
-  // Prefer OpenAI edit-with-refs (same library athlete). fal is fallback only.
-  // Drop barbell refs (bench.jpg) when the target is dumbbells/bands.
-  if (client) {
+  let image = await generateBocetoCandidate(ctx, prompt, {
+    client,
+    allowRefs: !skipRefs,
+  });
+
+  if (image && client && isPoseSensitiveLift(cls)) {
+    const qa = await qaBocetoImage(client, image, ctx, cls);
+    if (qa && qa.match === false) {
+      console.warn("[boceto] QA rejected first image", ctx.name, qa);
+      const retryPrompt = `${prompt}
+
+PREVIOUS ATTEMPT FAILED: the sketch looked like "${qa.depicted}".
+${qa.reason}
+Draw the HARD LOCK lift only. Do NOT draw ${qa.depicted}.`;
+      const retry = await generateBocetoCandidate(ctx, retryPrompt, {
+        client,
+        allowRefs: false,
+      });
+      if (retry) image = retry;
+    }
+  }
+
+  if (image) return image;
+
+  throw new Error(
+    "No hay boceto en librería y falta OPENAI_API_KEY / FAL_KEY (o falló la generación).",
+  );
+}
+
+async function generateBocetoCandidate(
+  ctx: BocetoPromptContext,
+  prompt: string,
+  opts: { client: OpenAI | null; allowRefs: boolean },
+): Promise<string | undefined> {
+  const { client, allowRefs } = opts;
+  const brief = buildVisualBrief(ctx);
+
+  if (client && allowRefs) {
     try {
       const refs = await loadCharacterReferenceFiles(brief);
       if (refs.length > 0) {
@@ -191,14 +233,14 @@ async function generateAiBoceto(ctx: BocetoPromptContext): Promise<string> {
 
 REFERENCE IMAGES = CHARACTER + ART STYLE ONLY.
 Keep THAT exact man (hair, face, body, shorts/sneakers) and white/orange-on-black line art.
-Do NOT copy equipment from the references. Locked equipment: ${brief.equipment}
+Do NOT copy equipment or pose from the references. Locked equipment: ${brief.equipment}
+Movement: ${brief.movementPattern}
+Body: ${brief.bodyPosition}
 Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
-          // Landscape matches library bocetos (~3:2) and sketch UI
           size: BOCETO_SIZE,
           quality: BOCETO_QUALITY,
           output_format: BOCETO_FORMAT,
           output_compression: 86,
-          // low = keep identity/style cues but allow a new pose/exercise
           input_fidelity: "low",
         });
         const url = edited.data?.[0]
@@ -215,7 +257,9 @@ Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
         err,
       );
     }
+  }
 
+  if (client) {
     try {
       const result = await client.images.generate({
         model: "gpt-image-1",
@@ -240,7 +284,7 @@ Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
   const falKey = process.env.FAL_KEY?.trim();
   if (falKey) {
     try {
-      return await generateWithFal(falKey, ctx);
+      return await generateWithFal(falKey, ctx, prompt, allowRefs);
     } catch (err) {
       console.error("[boceto] fal failed", err);
     }
@@ -271,28 +315,27 @@ Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
     }
   }
 
-  throw new Error(
-    "No hay boceto en librería y falta OPENAI_API_KEY / FAL_KEY (o falló la generación).",
-  );
+  return undefined;
 }
 
 async function generateWithFal(
   falKey: string,
   ctx: BocetoPromptContext,
+  prompt: string,
+  allowRefs: boolean,
 ): Promise<string> {
   const brief = buildVisualBrief(ctx);
-  const refs = characterReferenceDataUrls(brief);
-  const prompt = `${buildBocetoImagePrompt(ctx)}
+  const refs = allowRefs ? characterReferenceDataUrls(brief) : [];
+  const fullPrompt = `${prompt}
 
-Reference style + SAME athlete as ARMATUS library bocetos — neon dual-line art, white primary strokes with molten orange (#FF6B35) accents on pure black. Ignore equipment in the reference; use locked equipment only.`;
+Reference style + SAME athlete as ARMATUS library bocetos — neon dual-line art, white primary strokes with molten orange (#FF6B35) accents on pure black. Ignore equipment and pose in any reference; use HARD LOCK only.`;
 
-  // Image-to-image when we have a character anchor; else plain Flux
   const endpoint = refs[0]
     ? "https://fal.run/fal-ai/flux/dev/image-to-image"
     : "https://fal.run/fal-ai/flux/dev";
 
   const body: Record<string, unknown> = {
-    prompt,
+    prompt: fullPrompt,
     image_size: {
       width: 1536,
       height: 1024,
@@ -304,8 +347,7 @@ Reference style + SAME athlete as ARMATUS library bocetos — neon dual-line art
   };
   if (refs[0]) {
     body.image_url = refs[0];
-    // Keep identity loosely; allow new pose
-    body.strength = 0.58;
+    body.strength = 0.42;
   }
 
   const res = await fetch(endpoint, {

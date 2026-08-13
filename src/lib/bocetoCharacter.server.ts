@@ -4,13 +4,19 @@ import { toFile } from "openai";
 import {
   CHARACTER_REFERENCE_FILES,
   FLOOR_CHARACTER_REFERENCE_FILES,
+  PRESS_CHARACTER_REFERENCE_FILES,
   SAFE_CHARACTER_REFERENCE_FILES,
 } from "./bocetoCharacter";
 import {
   shouldExcludeBarbellReferences,
+  shouldExcludePullingReferences,
   shouldUseFloorCharacterReferences,
   type VisualBrief,
 } from "./bocetoBrief";
+import {
+  classifyLift,
+  shouldSkipCharacterReferences,
+} from "./bocetoFidelity";
 
 function pathsForFiles(files: readonly string[]): string[] {
   const dir = path.join(process.cwd(), "public", "bocetos");
@@ -18,13 +24,18 @@ function pathsForFiles(files: readonly string[]): string[] {
 }
 
 export function characterReferencePaths(brief?: VisualBrief): string[] {
+  if (brief && shouldSkipCharacterReferences(classifyLift(brief.primaryVariation))) {
+    return [];
+  }
   const files = !brief
     ? CHARACTER_REFERENCE_FILES
     : shouldUseFloorCharacterReferences(brief)
       ? FLOOR_CHARACTER_REFERENCE_FILES
-      : shouldExcludeBarbellReferences(brief)
-        ? SAFE_CHARACTER_REFERENCE_FILES
-        : CHARACTER_REFERENCE_FILES;
+      : shouldExcludePullingReferences(brief)
+        ? PRESS_CHARACTER_REFERENCE_FILES
+        : shouldExcludeBarbellReferences(brief)
+          ? SAFE_CHARACTER_REFERENCE_FILES
+          : CHARACTER_REFERENCE_FILES;
   return pathsForFiles(files);
 }
 

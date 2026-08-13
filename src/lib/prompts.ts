@@ -3,6 +3,12 @@ import {
   type BocetoPromptContext,
 } from "./bocetoBrief";
 import { ARMATUS_ATHLETE_LOCK } from "./bocetoCharacter";
+import {
+  classifyLift,
+  imageCoachingForPrompt,
+  imageHardLockBlock,
+  qaSpecForLift,
+} from "./bocetoFidelity";
 
 export type { BocetoPromptContext };
 
@@ -17,10 +23,11 @@ Reglas de contenido:
 - Dosificación realista según nivel (principiante / intermedio / avanzado).
 - duration y frequency: SOLO si el prompt del coach los indica con claridad. Si no, usa null (NO inventes "~45 min" ni "2× por semana").
 - Cada ejercicio necesita: badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks, variation (null si no aplica), note (null si no aplica).
-- intro / purpose / benefit: un poco más largos y específicos (2–4 frases) con biomecánica real — se usan también para generar el boceto. Menciona SIEMPRE el equipo exacto (mancuernas / barra / liga elástica / peso corporal).
+- intro / purpose / benefit: un poco más largos y específicos (2–4 frases) con biomecánica real — se usan también para generar el boceto. Menciona SIEMPRE el equipo exacto (mancuernas / barra / liga elástica / máquina / peso corporal).
 - VARIACIONES ≠ ejercicios extra. Si el coach pide variaciones / alternativas / "en vez de": NO añadas ejercicios. Conserva el mismo número. Rellena "variation" con 1–2 frases: "En vez de [este], puedes hacer [sustituto del mismo patrón] — cuándo".
 - NOTA / EXPLICACIÓN EXTRA: si el coach pide un recuadro, una nota, o que algo se explique en el ejercicio, rellena "note". No lo metas en intro. Si no lo pide, note = null.
 - sketchCaption: 1–2 frases EN ESPAÑOL con UNA sola variación (si el nombre dice "A o B", elige A): equipo exacto, pose, ángulo, músculos a resaltar y qué NO dibujar (ej. "press en banco plano con DOS mancuernas; NO barra olímpica"). Sin la palabra "Boceto".
+- Press de hombro/pecho EN MÁQUINA → sentado en la máquina, EMPUJE (manijas hacia ARRIBA o al frente). NUNCA remo, NUNCA poleas horizontales al pecho. sketchCaption debe decir "máquina de press, empuje vertical; NO remo".
 
 ESTRUCTURA / CALENTAMIENTO (crítico — no colapses listas):
 - Si el prompt tiene sección CALENTAMIENTO y BLOQUE PRINCIPAL (u otra división), respétala.
@@ -158,58 +165,66 @@ function clipPrompt(text: string | undefined | null, max: number): string {
 }
 
 /**
- * Rich image prompt: locks equipment from coaching text and enforces
- * shirtless torso + orange activation lines on working muscles.
+ * Image prompt: HARD LOCK (lift + movement) comes first.
+ * Classified lifts omit intro/purpose so coaching copy cannot turn a
+ * press into a row. Character/style is last and must not dictate pose.
  */
 export function buildBocetoImagePrompt(ctx: BocetoPromptContext): string {
   const brief = buildVisualBrief(ctx);
+  const cls = classifyLift(ctx.name, ctx.nameEn);
+  const title = ctx.nameEn
+    ? `${ctx.name.trim()} (${ctx.nameEn.trim()})`
+    : ctx.name.trim();
+  const coaching = imageCoachingForPrompt(ctx, cls);
+  const qa = qaSpecForLift(cls, title);
 
-  const muscles =
-    (ctx.muscles || []).slice(0, 6).join(", ") || "primary movers from the brief";
-  const cues = (ctx.steps || [])
-    .slice(0, 4)
+  const muscles = coaching.muscles.join(", ") || "primary movers from the title";
+  const cues = coaching.steps
     .map((s) => `${s.title}: ${clipPrompt(s.body, 140)}`)
     .join(" | ");
-  const avoid = [
-    ...brief.forbidEquipment,
-    ...(ctx.commonMistakes || []).slice(0, 3).map((m) => clipPrompt(m, 90)),
-  ]
-    .filter(Boolean)
-    .join("; ");
+  const avoid = brief.forbidEquipment.filter(Boolean).join("; ");
+  const captionLine = coaching.caption
+    ? `CAPTION: ${clipPrompt(coaching.caption, 220)}`
+    : "";
+
+  const coachingBlock =
+    cls.kind === "other"
+      ? `=== COACHING (pose only; ignore if it contradicts HARD LOCK) ===
+TITLE: ${clipPrompt(ctx.name, 120)}${ctx.nameEn ? ` / ${clipPrompt(ctx.nameEn, 80)}` : ""}
+CAPTION: ${clipPrompt(ctx.sketchCaption, 220)}
+INTRO: ${clipPrompt(ctx.intro, 200)}
+PURPOSE: ${clipPrompt(ctx.purpose, 200)}
+ACTIVE MUSCLES (orange fiber glow): ${muscles}
+TECHNIQUE STEPS: ${cues || clipPrompt(ctx.intro, 160)}
+FORBIDDEN: ${avoid || "any different machine or free-weight type"}`
+      : `=== TITLE + CUES (must not contradict HARD LOCK) ===
+TITLE: ${clipPrompt(title, 160)}
+${captionLine}
+ACTIVE MUSCLES (orange fiber glow): ${muscles}
+TECHNIQUE STEPS: ${cues || "follow HARD LOCK pose"}
+FORBIDDEN: ${avoid || qa.mustNotShow}
+Do NOT use any other paragraph of coaching copy. Intro/purpose are withheld on purpose.`;
 
   return `ARMATUS Coach Studio — premium biomechanics boceto (technical neon line art).
 
-=== CHARACTER ONLY (ignore equipment in references) ===
-${ARMATUS_ATHLETE_LOCK}
-If reference images are attached: use them ONLY for the athlete's face, hair, body proportions, shorts/sneakers, and white/orange-on-black line style.
-CRITICAL: IGNORE any barbell, plates, cables, or machines visible in the references. Replace equipment with the LOCKED EQUIPMENT below. References must NOT dictate the implement.
+${imageHardLockBlock({ title, cls, brief })}
 
-=== LOCKED EQUIPMENT (hard fail if wrong) ===
-${brief.equipmentLockLine}
-PRIMARY VARIATION: ${brief.primaryVariation}
-BODY POSITION: ${brief.bodyPosition}
-LATERALITY: ${brief.laterality}
-
-=== COACHING CONTEXT (pose must match this explanation) ===
-TITLE: ${clipPrompt(ctx.name, 120)}${ctx.nameEn ? ` / ${clipPrompt(ctx.nameEn, 80)}` : ""}
-CAPTION: ${clipPrompt(ctx.sketchCaption, 280)}
-INTRO: ${clipPrompt(ctx.intro, 280)}
-PURPOSE: ${clipPrompt(ctx.purpose, 280)}
-ACTIVE MUSCLES (orange fiber glow): ${muscles}
-TECHNIQUE STEPS: ${cues || clipPrompt(ctx.intro, 200)}
-FORBIDDEN: ${avoid || "any different machine or free-weight type"}
+${coachingBlock}
 
 === NON-NEGOTIABLE VISUAL RULES ===
-1) EQUIPMENT FIDELITY: Barbell ≠ dumbbell. Two dumbbells = two separate short handles, one per hand — NEVER one long bar. Resistance band = visible elastic band under tension, not a dumbbell. Cable ≠ free weight.
-2) If the title says mancuernas / dumbbells, both hands (or the working hand) hold dumbbells; there must be a visible gap between implements — no connecting shaft.
-3) If the title says liga / banda / band, draw the band path clearly; do not substitute a dumbbell or cable.
-4) Pose must match BODY POSITION + TECHNIQUE STEPS (e.g. standing band ER ≠ side-lying DB ER).
-5) 90/90 hip switch / cambio de cadera: athlete SITS ON THE FLOOR, both knees bent 90°, switching legs. NEVER standing. NEVER a cable, D-handle, row, or pulling movement.
-6) UPPER BODY SHIRTLESS — athletic shorts + sneakers only. Non-sexual, coaching-anatomical.
-7) ACTIVATION GLOW: molten orange (#FF6B35) on working muscle fibers; white for silhouette. Pure black background. Sharp dual-line technical sketch, landscape composition.
-8) ZERO text, letters, numbers, labels, watermarks, or logos.
+1) PRESS ≠ PULL. Press = PUSH away from the body (UP overhead or OUT from the chest). Row/remo = PULL toward the torso. Never swap them.
+2) MACHINE PRESS: draw the machine frame. Seated, back on the pad. Shoulder press handles travel STRAIGHT UP. Chest press handles travel FORWARD. NOT cable towers, NOT D-handles pulled in, NOT bands.
+3) EQUIPMENT FIDELITY: Barbell ≠ dumbbell. Two dumbbells = two separate short handles. Band = visible elastic. Cable ≠ selectorized press machine.
+4) 90/90 / floor mobility: athlete ON THE FLOOR. NEVER a cable, D-handle, or row.
+5) UPPER BODY SHIRTLESS — athletic shorts + sneakers. Non-sexual, coaching-anatomical.
+6) ACTIVATION GLOW: molten orange (#FF6B35) on working muscles; white silhouette; pure black background; sharp dual-line technical sketch; landscape.
+7) ZERO text, letters, numbers, labels, watermarks, or logos.
 
-Illustrate ONE decisive mid-rep frame of PRIMARY VARIATION with LOCKED EQUIPMENT only, same ARMATUS athlete as references (character only).`;
+=== CHARACTER / STYLE ONLY (pose is HARD LOCK, not this) ===
+${ARMATUS_ATHLETE_LOCK}
+If reference images are attached: face, hair, body proportions, shorts/sneakers, and white/orange-on-black line style ONLY. Do NOT copy the reference pose, bench, bar, cables, or pull-up hang.
+
+Illustrate ONE mid-rep frame of TITLE with HARD LOCK equipment and movement.`;
 }
 
 export function withOutputLanguage(system: string, locale: "es" | "en"): string {

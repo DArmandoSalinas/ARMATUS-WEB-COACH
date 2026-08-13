@@ -24,5 +24,11 @@ export const SAFE_CHARACTER_REFERENCE_FILES = [
   "pushup.jpg",
 ] as const;
 
+/** Presses: hanging-pull refs (pullup.jpg) get copied as fake seated rows. */
+export const PRESS_CHARACTER_REFERENCE_FILES = [
+  "squat.jpg",
+  "pushup.jpg",
+] as const;
+
 /** Floor / seated-on-ground drills — hanging pull refs become fake cable rows. */
 export const FLOOR_CHARACTER_REFERENCE_FILES = ["pushup.jpg"] as const;
