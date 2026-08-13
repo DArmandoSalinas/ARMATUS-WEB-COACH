@@ -91,7 +91,7 @@ const ROTATION_MOVE =
   "shoulder rotation with the elbow at 90° — not a press, not a row.";
 
 const MACHINE_SHOULDER_PRESS =
-  "SEATED SHOULDER PRESS MACHINE (selectorized / guided levers): back against the pad, two machine handles at shoulder height. Athlete PUSHES the handles VERTICALLY OVERHEAD to lockout. Draw the machine frame. Mid-rep = arms extending UP. This is a MACHINE PRESS — not cables, not a row.";
+  "selectorized seated shoulder press machine: upright seat, full back pad, two independent lever handles at ear/shoulder height that travel STRAIGHT UP. Typical Hammer-Strength / pin-loaded shoulder press. Not cables, not a bar behind the neck.";
 
 const MACHINE_CHEST_PRESS =
   "SEATED CHEST PRESS MACHINE: back against the pad, two machine handles at chest height. Athlete PUSHES the handles FORWARD away from the chest. Draw the machine frame. This is a PRESS — not a seated row.";
@@ -238,7 +238,7 @@ export function applyLiftOverride<T extends BriefSlice>(
         "polea",
       ]),
       bodyPosition:
-        "SEATED on the shoulder-press machine, back against the pad, pushing handles vertically overhead",
+        "UPRIGHT seated (torso vertical), full back on the pad, mid-rep elbows ~90°, handles at ear height pressing straight up — not reclined, not behind-the-neck, not locked out",
       movementPattern: VERTICAL_PUSH,
     };
   } else if (cls.kind === "chest-press" && cls.equipment === "machine") {
@@ -369,10 +369,10 @@ export function briefFidelityError(
     if (!/\bmachine\b/i.test(brief.equipment)) {
       return "machine shoulder press missing machine";
     }
-    if (!/\bSEATED\b/i.test(drawn)) {
+    if (!/\b(SEATED|UPRIGHT seated)\b/i.test(drawn)) {
       return "machine shoulder press is not seated";
     }
-    if (!/\b(OVERHEAD|UP)\b/i.test(drawn)) {
+    if (!/\b(OVERHEAD|UP|straight up|ear height)\b/i.test(drawn)) {
       return "machine shoulder press is not overhead";
     }
   }
@@ -569,82 +569,147 @@ export function imageCoachingForPrompt(
   return { caption, steps, muscles };
 }
 
+export function liftLabelEn(cls: LiftClass): string {
+  switch (cls.kind) {
+    case "shoulder-press":
+      return cls.equipment === "machine"
+        ? "seated machine shoulder press"
+        : "overhead shoulder press";
+    case "chest-press":
+      return cls.equipment === "machine"
+        ? "seated machine chest press"
+        : "bench / chest press";
+    case "row":
+      return "seated or bent-over row";
+    case "pulldown":
+      return "lat pulldown";
+    case "pullup":
+      return "pull-up";
+    case "shoulder-rotation":
+      return "standing band shoulder rotation";
+    case "floor-mobility":
+      return "floor mobility drill";
+    default:
+      return "the named lift";
+  }
+}
+
+export function visualPoseLock(cls: LiftClass): string {
+  if (cls.kind === "shoulder-press" && cls.equipment === "machine") {
+    return `MID-REP seated machine shoulder press, 3/4 front-side view.
+Athlete sits UPRIGHT (torso vertical), whole back glued to the pad — not reclined, not hunched, not standing.
+Head neutral, eyes forward. Feet flat, knees ~90°.
+Two independent vertical handles beside the shoulders at EAR height (not a bar behind the neck).
+Elbows bent ~90°, wrists stacked over elbows, forearms vertical, pressing STRAIGHT UP. Not a chest press, not a row, not lockout behind the head.
+Orange glow on deltoids and triceps. Shirtless, shorts, sneakers.
+Athlete + machine centered on pure black. The rest of the frame is empty black.`;
+  }
+  if (cls.kind === "shoulder-press") {
+    return `MID-REP overhead press: athlete UPRIGHT, pressing the load vertically from ear height toward lockout. Elbows ~90°, not a row, not behind the neck.`;
+  }
+  if (cls.kind === "chest-press" && cls.equipment === "machine") {
+    return `MID-REP seated chest-press machine: upright on the pad, handles at chest height, PUSHING FORWARD. Elbows ~90°. Not a row.`;
+  }
+  if (cls.kind === "chest-press") {
+    return `MID-REP bench press: lying supine, pressing the load up off the chest.`;
+  }
+  if (cls.kind === "row") {
+    return `MID-REP row: athlete PULLING the load toward the torso.`;
+  }
+  if (cls.kind === "pulldown") {
+    return `MID-REP lat pulldown: seated, wide bar pulling down to the upper chest.`;
+  }
+  if (cls.kind === "pullup") {
+    return `MID-REP pull-up: hanging from a fixed bar, pulling the chest toward the bar.`;
+  }
+  if (cls.kind === "shoulder-rotation") {
+    return `Standing, elbow glued at 90° to the ribs, rotating the forearm against a band. Not a press, not a row.`;
+  }
+  if (cls.kind === "floor-mobility") {
+    return `Athlete on the FLOOR as the drill requires. Not standing, not pulling a cable.`;
+  }
+  return "one clear mid-rep frame of the named lift.";
+}
+
 export type LiftQaSpec = {
   mustShow: string;
   mustNotShow: string;
   failIf: string;
 };
 
-export function qaSpecForLift(cls: LiftClass, title: string): LiftQaSpec {
+export function qaSpecForLift(cls: LiftClass, _title?: string): LiftQaSpec {
+  const lift = liftLabelEn(cls);
+  const noText =
+    "ANY letters, words, titles, captions, muscle legends, infographic columns, watermarks, numbers";
   if (cls.kind === "shoulder-press" && cls.equipment === "machine") {
     return {
-      mustShow: `seated SHOULDER PRESS MACHINE, ${title}, athlete PUSHING handles VERTICALLY OVERHEAD, machine frame visible`,
-      mustNotShow:
-        "seated cable row, remo, face pull, D-handles pulled to the chest, resistance band, standing cable pull, squat",
+      mustShow: `silent sketch of ${lift}: UPRIGHT seated, back flat on the pad, mid-rep elbows ~90°, handles at ear height pressing vertically up, machine frame visible. Athlete only.`,
+      mustNotShow: `${noText}; seated cable row; reclined / incline torso; behind-the-neck press; arms locked out behind the head`,
       failIf:
-        "the athlete is pulling toward the torso, or the load is cables/bands instead of a press machine, or the arms are not traveling up",
+        "there is ANY text in the image, OR the torso is reclined, OR it is a row/pull, OR the press is behind the neck",
     };
   }
   if (cls.kind === "shoulder-press") {
     return {
-      mustShow: `OVERHEAD / SHOULDER PRESS, ${title}, athlete PUSHING the load UP above the head`,
-      mustNotShow: "seated cable row, remo, face pull, pulling to the chest",
-      failIf: "the athlete is pulling toward the torso instead of pressing up",
+      mustShow: `silent sketch of ${lift}: athlete PUSHING the load UP from ear height, elbows ~90° mid-rep`,
+      mustNotShow: `${noText}; seated cable row; pulling to the chest`,
+      failIf:
+        "there is ANY text in the image, OR the athlete is pulling toward the torso instead of pressing up",
     };
   }
   if (cls.kind === "chest-press" && cls.equipment === "machine") {
     return {
-      mustShow: `seated CHEST PRESS MACHINE, athlete PUSHING handles FORWARD away from the chest`,
-      mustNotShow: "seated cable row, remo, pulling to the torso",
-      failIf: "the athlete is pulling handles toward the body",
+      mustShow: `silent sketch of ${lift}: upright on the pad, PUSHING handles FORWARD`,
+      mustNotShow: `${noText}; seated cable row; pulling to the torso`,
+      failIf: "there is ANY text, OR the athlete is pulling handles toward the body",
     };
   }
   if (cls.kind === "chest-press") {
     return {
-      mustShow: `CHEST / BENCH PRESS, athlete PUSHING the load AWAY from the chest`,
-      mustNotShow: "seated row, remo, overhead press unless the title is overhead",
-      failIf: "the athlete is pulling instead of pressing",
+      mustShow: `silent sketch of ${lift}: PUSHING the load AWAY from the chest`,
+      mustNotShow: `${noText}; seated row; overhead press unless the title is overhead`,
+      failIf: "there is ANY text, OR the athlete is pulling instead of pressing",
     };
   }
   if (cls.kind === "row") {
     return {
-      mustShow: `ROW / REMO, athlete PULLING the load toward the torso`,
-      mustNotShow: "shoulder press, overhead press, pressing handles up",
-      failIf: "the athlete is pressing overhead instead of rowing",
+      mustShow: `silent sketch of ${lift}: PULLING the load toward the torso`,
+      mustNotShow: `${noText}; shoulder press; overhead press`,
+      failIf: "there is ANY text, OR the athlete is pressing overhead instead of rowing",
     };
   }
   if (cls.kind === "pulldown") {
     return {
-      mustShow: `LAT PULLDOWN machine, bar pulled down to the upper chest`,
-      mustNotShow: "bodyweight pull-up hang, shoulder press",
-      failIf: "it is a hanging pull-up or a press",
+      mustShow: `silent sketch of ${lift}: bar pulled down to the upper chest`,
+      mustNotShow: `${noText}; bodyweight pull-up hang; shoulder press`,
+      failIf: "there is ANY text, OR it is a hanging pull-up or a press",
     };
   }
   if (cls.kind === "pullup") {
     return {
-      mustShow: `bodyweight PULL-UP on a fixed bar`,
-      mustNotShow: "lat pulldown machine, shoulder press",
-      failIf: "it is a pulldown machine or a press",
+      mustShow: `silent sketch of ${lift}: hanging from a fixed bar`,
+      mustNotShow: `${noText}; lat pulldown machine; shoulder press`,
+      failIf: "there is ANY text, OR it is a pulldown machine or a press",
     };
   }
   if (cls.kind === "shoulder-rotation") {
     return {
-      mustShow: `standing shoulder IR/ER, elbow at 90° at the side`,
-      mustNotShow: "shoulder press machine, seated row, overhead press",
-      failIf: "it is a press or a row",
+      mustShow: `silent sketch of standing IR/ER, elbow at 90° at the side`,
+      mustNotShow: `${noText}; shoulder press machine; seated row; overhead press`,
+      failIf: "there is ANY text, OR it is a press or a row",
     };
   }
   if (cls.kind === "floor-mobility") {
     return {
-      mustShow: `athlete on the FLOOR for ${title}`,
-      mustNotShow: "cable row, D-handle, standing pull",
-      failIf: "the athlete is standing and pulling a cable",
+      mustShow: `silent sketch of the athlete on the FLOOR`,
+      mustNotShow: `${noText}; cable row; D-handle; standing pull`,
+      failIf: "there is ANY text, OR the athlete is standing and pulling a cable",
     };
   }
   return {
-    mustShow: `the named exercise: ${title}`,
-    mustNotShow: "a completely different lift",
-    failIf: "the image is a different exercise than the title",
+    mustShow: `silent sketch of ${lift}`,
+    mustNotShow: noText,
+    failIf: "there is ANY text in the image, OR it is a different exercise",
   };
 }
 
@@ -655,15 +720,15 @@ export function imageHardLockBlock(opts: {
   brief: BriefSlice;
 }): string {
   const qa = qaSpecForLift(opts.cls, opts.title);
+  const lift = liftLabelEn(opts.cls);
   return `=== HARD LOCK (read first; violating this = FAILED image) ===
-TITLE: ${opts.title}
-MUST DRAW: ${qa.mustShow}
+SILENT SKETCH: the output pixels contain ZERO letters, words, numbers, labels, arrows-with-captions, or legends. If a coach can read anything, you FAILED.
+LIFT TO DEPICT (do not write this): ${lift}
+POSE: ${visualPoseLock(opts.cls)}
 MOVEMENT: ${opts.brief.movementPattern}
-BODY: ${opts.brief.bodyPosition}
 EQUIPMENT: ${opts.brief.equipment}
 MUST NOT DRAW: ${qa.mustNotShow}
-FAIL IF: ${qa.failIf}
-ACCEPTANCE: a coach must recognize "${opts.title}" in one second. If it looks like a row when this is a press (or the reverse), you FAILED.`;
+FAIL IF: ${qa.failIf}`;
 }
 
 export function imagePromptFidelityError(
@@ -676,14 +741,24 @@ export function imagePromptFidelityError(
   if (charIdx >= 0 && charIdx < lockIdx) {
     return "character/style block appears before HARD LOCK";
   }
+  if (!/SILENT SKETCH|ZERO letters/i.test(prompt)) {
+    return "image prompt missing no-text lock";
+  }
+  if (/\n(INTRO|CAPTION|TECHNIQUE STEPS|PURPOSE):/i.test(prompt)) {
+    return "image prompt still includes coaching fields that get painted as text";
+  }
   if (cls.kind === "shoulder-press" || cls.kind === "chest-press") {
-    const head = prompt.slice(0, 1800);
-    if (!/\b(PUSH|OVERHEAD|FORWARD)\b/i.test(head)) {
+    const head = prompt.slice(0, 2200);
+    if (!/\b(PUSH|OVERHEAD|FORWARD|straight up)\b/i.test(head)) {
       return "press prompt missing push language in the lock";
     }
-    if (/\nINTRO:\s+\S/i.test(prompt)) {
-      return "classified press prompt still includes intro (contamination)";
-    }
+  }
+  if (
+    cls.kind === "shoulder-press" &&
+    cls.equipment === "machine" &&
+    !/UPRIGHT|elbows ~90|ear height/i.test(prompt)
+  ) {
+    return "machine press prompt missing upright mid-rep pose";
   }
   return null;
 }

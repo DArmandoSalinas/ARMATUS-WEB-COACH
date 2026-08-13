@@ -449,7 +449,7 @@ function detectBodyPosition(text: string): string {
     return "seated on the floor, both knees and hips at ~90°, torso upright — NOT standing, NOT pulling";
   }
   if (isShoulderPress(text) && hasMachine(text)) {
-    return "SEATED on the shoulder-press machine, back against the pad, pushing handles vertically overhead";
+    return "SEATED UPRIGHT on the shoulder-press machine (torso vertical, back on the pad), mid-rep elbows ~90°, handles at ear height pressing straight up";
   }
   if (isChestPress(text) && hasMachine(text) && !/\b(banca|bench)\b/i.test(text)) {
     return "SEATED on the chest-press machine, back against the pad, pushing handles forward";

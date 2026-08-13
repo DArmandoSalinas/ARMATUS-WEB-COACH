@@ -52,10 +52,12 @@ export async function qaBocetoImage(
       messages: [
         {
           role: "system",
-          content: `You are a strict strength-coach image QA. Decide if the sketch shows the NAMED lift.
+          content: `You are a strict strength-coach image QA for a silent technical sketch.
 Reply JSON only: {"match":boolean,"depicted":"what the image actually shows","reason":"one sentence"}.
-match=false if FAIL IF applies or MUST NOT DRAW is what you see.
-When unsure but it could be the wrong pattern (press vs row), match=false.`,
+match=false if FAIL IF applies.
+match=false if there is ANY text, letters, labels, titles, captions, or gibberish in the image.
+match=false if a shoulder-press machine is drawn reclined, behind-the-neck, or as a row.
+When unsure between press vs row, match=false.`,
         },
         {
           role: "user",

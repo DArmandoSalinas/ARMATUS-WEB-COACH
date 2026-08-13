@@ -5,9 +5,7 @@ import {
 import { ARMATUS_ATHLETE_LOCK } from "./bocetoCharacter";
 import {
   classifyLift,
-  imageCoachingForPrompt,
   imageHardLockBlock,
-  qaSpecForLift,
 } from "./bocetoFidelity";
 
 export type { BocetoPromptContext };
@@ -158,16 +156,9 @@ Sin emojis. Responde SOLO JSON válido:
   "supportLinks": [{ "label": string | null, "url": string }]
 }`;
 
-function clipPrompt(text: string | undefined | null, max: number): string {
-  const t = (text || "").replace(/\s+/g, " ").trim();
-  if (!t) return "";
-  return t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`;
-}
-
 /**
- * Image prompt: HARD LOCK (lift + movement) comes first.
- * Classified lifts omit intro/purpose so coaching copy cannot turn a
- * press into a row. Character/style is last and must not dictate pose.
+ * Image prompt: HARD LOCK pose first. Never pass title/caption/steps —
+ * the model paints those as infographic text. Output is the athlete only.
  */
 export function buildBocetoImagePrompt(ctx: BocetoPromptContext): string {
   const brief = buildVisualBrief(ctx);
@@ -175,56 +166,23 @@ export function buildBocetoImagePrompt(ctx: BocetoPromptContext): string {
   const title = ctx.nameEn
     ? `${ctx.name.trim()} (${ctx.nameEn.trim()})`
     : ctx.name.trim();
-  const coaching = imageCoachingForPrompt(ctx, cls);
-  const qa = qaSpecForLift(cls, title);
 
-  const muscles = coaching.muscles.join(", ") || "primary movers from the title";
-  const cues = coaching.steps
-    .map((s) => `${s.title}: ${clipPrompt(s.body, 140)}`)
-    .join(" | ");
-  const avoid = brief.forbidEquipment.filter(Boolean).join("; ");
-  const captionLine = coaching.caption
-    ? `CAPTION: ${clipPrompt(coaching.caption, 220)}`
-    : "";
-
-  const coachingBlock =
-    cls.kind === "other"
-      ? `=== COACHING (pose only; ignore if it contradicts HARD LOCK) ===
-TITLE: ${clipPrompt(ctx.name, 120)}${ctx.nameEn ? ` / ${clipPrompt(ctx.nameEn, 80)}` : ""}
-CAPTION: ${clipPrompt(ctx.sketchCaption, 220)}
-INTRO: ${clipPrompt(ctx.intro, 200)}
-PURPOSE: ${clipPrompt(ctx.purpose, 200)}
-ACTIVE MUSCLES (orange fiber glow): ${muscles}
-TECHNIQUE STEPS: ${cues || clipPrompt(ctx.intro, 160)}
-FORBIDDEN: ${avoid || "any different machine or free-weight type"}`
-      : `=== TITLE + CUES (must not contradict HARD LOCK) ===
-TITLE: ${clipPrompt(title, 160)}
-${captionLine}
-ACTIVE MUSCLES (orange fiber glow): ${muscles}
-TECHNIQUE STEPS: ${cues || "follow HARD LOCK pose"}
-FORBIDDEN: ${avoid || qa.mustNotShow}
-Do NOT use any other paragraph of coaching copy. Intro/purpose are withheld on purpose.`;
-
-  return `ARMATUS Coach Studio — premium biomechanics boceto (technical neon line art).
+  return `ARMATUS Coach Studio — silent neon line-art boceto.
 
 ${imageHardLockBlock({ title, cls, brief })}
 
-${coachingBlock}
-
-=== NON-NEGOTIABLE VISUAL RULES ===
-1) PRESS ≠ PULL. Press = PUSH away from the body (UP overhead or OUT from the chest). Row/remo = PULL toward the torso. Never swap them.
-2) MACHINE PRESS: draw the machine frame. Seated, back on the pad. Shoulder press handles travel STRAIGHT UP. Chest press handles travel FORWARD. NOT cable towers, NOT D-handles pulled in, NOT bands.
-3) EQUIPMENT FIDELITY: Barbell ≠ dumbbell. Two dumbbells = two separate short handles. Band = visible elastic. Cable ≠ selectorized press machine.
-4) 90/90 / floor mobility: athlete ON THE FLOOR. NEVER a cable, D-handle, or row.
-5) UPPER BODY SHIRTLESS — athletic shorts + sneakers. Non-sexual, coaching-anatomical.
-6) ACTIVATION GLOW: molten orange (#FF6B35) on working muscles; white silhouette; pure black background; sharp dual-line technical sketch; landscape.
-7) ZERO text, letters, numbers, labels, watermarks, or logos.
+=== NON-NEGOTIABLE ===
+1) THE PICTURE HAS NO TEXT. Not the exercise name, not muscle names, not steps, not gibberish. Athlete + equipment only. The UI already shows the title.
+2) PRESS ≠ PULL. Press = PUSH up or away. Row = PULL in. Never swap.
+3) MACHINE SHOULDER PRESS: upright seated, back on the pad, mid-rep elbows ~90°, handles at the ears pressing STRAIGHT UP. Not reclined. Not behind the neck. Not locked out over the spine.
+4) Shirtless, shorts, sneakers. Orange (#FF6B35) on working muscles. White dual-line on pure black. Landscape. Centered.
+5) Empty space is black. No sidebar, no columns, no legend.
 
 === CHARACTER / STYLE ONLY (pose is HARD LOCK, not this) ===
 ${ARMATUS_ATHLETE_LOCK}
-If reference images are attached: face, hair, body proportions, shorts/sneakers, and white/orange-on-black line style ONLY. Do NOT copy the reference pose, bench, bar, cables, or pull-up hang.
+If reference images are attached: face/hair/body/shorts only. Do not copy reference pose or equipment.
 
-Illustrate ONE mid-rep frame of TITLE with HARD LOCK equipment and movement.`;
+Draw ONE mid-rep frame. Athlete only. Zero letters.`;
 }
 
 export function withOutputLanguage(system: string, locale: "es" | "en"): string {

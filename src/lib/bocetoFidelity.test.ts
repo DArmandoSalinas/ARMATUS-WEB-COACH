@@ -254,12 +254,15 @@ describe("image generation lock — press cannot be prompted as a row", () => {
     const lockIdx = prompt.indexOf("HARD LOCK");
     const charIdx = prompt.indexOf("CHARACTER / STYLE");
     assert.ok(lockIdx >= 0 && lockIdx < charIdx);
-    assert.doesNotMatch(prompt, /\nINTRO:\s+\S/);
-    assert.match(prompt, /VERTICAL PUSH|OVERHEAD/i);
-    assert.match(prompt, /MUST NOT DRAW:[\s\S]*row/i);
+    assert.match(prompt, /SILENT SKETCH|ZERO letters/i);
+    assert.match(prompt, /UPRIGHT|ear height|elbows ~90/i);
+    assert.doesNotMatch(prompt, /\nINTRO:/);
+    assert.doesNotMatch(prompt, /\nCAPTION:/);
+    assert.doesNotMatch(prompt, /\nTECHNIQUE STEPS:/);
+    assert.doesNotMatch(prompt, /PRESS DE HOMBRO EN MAQUINA/);
     assert.doesNotMatch(prompt, /Similar a una rotación/);
     assert.doesNotMatch(prompt, /Tira: Remo sentado/);
-    assert.match(prompt, /Empuja: Extiende los brazos/);
+    assert.doesNotMatch(prompt, /Empuja: Extiende/);
   });
 
   it("keeps a caption that only forbids remo, drops a caption that is a row", () => {
