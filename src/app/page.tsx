@@ -6,7 +6,6 @@ import { BrandMark } from "@/components/BrandMark";
 import { HeroEnergy } from "@/components/HeroEnergy";
 import { HeroThunder } from "@/components/HeroThunder";
 import { useLocale } from "@/components/LocaleToggle";
-import { RecentRoutines } from "@/components/RecentRoutines";
 import { Reveal } from "@/components/Reveal";
 import { SiteTopbar } from "@/components/SiteTopbar";
 import { Typewriter } from "@/components/Typewriter";
@@ -107,8 +106,6 @@ export default function HomePage() {
           </div>
         ))}
       </Reveal>
-
-      <RecentRoutines />
     </main>
   );
 }

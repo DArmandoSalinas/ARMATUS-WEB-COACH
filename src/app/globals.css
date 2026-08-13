@@ -130,6 +130,247 @@ input {
   flex-shrink: 0;
 }
 
+.archive-trigger {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  min-height: 44px;
+  padding: 0 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s var(--ease);
+}
+
+.archive-trigger:hover,
+.archive-trigger:focus-visible {
+  color: var(--text-secondary);
+  outline: none;
+}
+
+.archive-trigger__count {
+  color: var(--primary);
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 420px) {
+  .archive-trigger {
+    font-size: 0;
+    gap: 0;
+    padding: 0 4px;
+  }
+
+  .archive-trigger__count {
+    font-size: 0.72rem;
+  }
+}
+
+.archive {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.archive__scrim {
+  appearance: none;
+  border: 0;
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.archive__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(400px, 100vw);
+  padding: 28px 24px 48px;
+  background: var(--bg);
+  border-left: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.archive__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.archive__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.archive__hint {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-tertiary);
+}
+
+.archive__close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  min-height: 44px;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.archive__close:hover {
+  color: var(--text);
+}
+
+.archive__search {
+  display: block;
+  margin: 0 0 8px;
+}
+
+.archive__search input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 10px 0;
+  font-size: 0.92rem;
+}
+
+.archive__search input:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
+}
+
+.archive__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.archive__empty {
+  margin: 16px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.archive-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.archive-row__main {
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.archive-row__name {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+}
+
+.archive-row__goal {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archive-row__when {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  padding-top: 3px;
+  white-space: nowrap;
+}
+
+.archive-row__tools {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 16px;
+  min-height: 36px;
+  align-items: center;
+}
+
+.archive-row__tools button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 8px 0;
+  min-height: 44px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.archive-row__tools button:hover {
+  color: var(--primary);
+}
+
+.archive-row__tools button.is-danger:hover {
+  color: var(--error);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .archive-row__tools {
+    opacity: 0;
+    max-height: 0;
+    min-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition:
+      opacity 0.18s var(--ease),
+      max-height 0.18s var(--ease);
+  }
+
+  .archive-row:hover .archive-row__tools,
+  .archive-row:focus-within .archive-row__tools {
+    opacity: 1;
+    max-height: 48px;
+    min-height: 36px;
+    pointer-events: auto;
+  }
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -1590,55 +1831,6 @@ html[data-theme="clara"] .ex-nav {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
 }
 
-.recent-list {
-  display: grid;
-  gap: 10px;
-}
-
-.recent-card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  text-align: left;
-}
-
-.recent-card__title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 0.95rem;
-  margin: 0;
-}
-
-.recent-card__meta {
-  margin: 4px 0 0;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
-
-.recent-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-@media (max-width: 640px) {
-  .recent-card {
-    grid-template-columns: 1fr;
-  }
-
-  .recent-card__actions {
-    justify-content: flex-start;
-  }
-}
-
 .coach-chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -1776,18 +1968,6 @@ html[data-theme="clara"] .ex-nav {
   background: var(--primary-fill);
   color: var(--text-secondary);
   font-size: 0.88rem;
-}
-
-.recent-search {
-  display: block;
-  margin: 0 0 12px;
-}
-
-.recent-empty {
-  margin: 0;
-  padding: 14px 4px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
 }
 
 .diff-list {

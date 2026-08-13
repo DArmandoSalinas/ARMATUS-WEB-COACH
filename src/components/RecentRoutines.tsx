@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/components/LocaleToggle";
@@ -30,9 +30,11 @@ function formatWhen(iso: string, locale: "es" | "en"): string {
 export function RecentRoutines() {
   const router = useRouter();
   const locale = useLocale();
+  const titleId = useId();
   const [items, setItems] = useState<RoutineMeta[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const refresh = () => setItems(listRoutineMeta());
@@ -45,6 +47,20 @@ export function RecentRoutines() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   const visible = items.filter((r) => r.id !== SEED_ROUTINE_ID);
   const needle = query.trim().toLowerCase();
   const filtered = needle
@@ -54,6 +70,7 @@ export function RecentRoutines() {
           r.objective.toLowerCase().includes(needle),
       )
     : visible;
+
   if (visible.length === 0) return null;
 
   async function handleDelete(id: string, name: string) {
@@ -72,6 +89,7 @@ export function RecentRoutines() {
     try {
       const source = await getRoutineHydrated(id);
       if (!source) return;
+      setOpen(false);
       const copy = await duplicateRoutine(source);
       router.push(`/rutina/${copy.id}`);
     } finally {
@@ -79,62 +97,111 @@ export function RecentRoutines() {
     }
   }
 
+  const count = String(visible.length).padStart(2, "0");
+
   return (
-    <section className="relative z-10 mx-auto w-full max-w-3xl px-5 pb-16">
-      <h2 className="mb-3 font-[family-name:var(--font-display)] text-[0.72rem] font-bold tracking-[0.22em] text-[var(--primary)] uppercase">
-        {tx(locale, "recentTitle")}
-      </h2>
-      {visible.length > 1 ? (
-        <label className="recent-search">
-          <span className="sr-only">{tx(locale, "searchRecent")}</span>
-          <input
-            className="field-edit"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={tx(locale, "searchRecent")}
-            autoComplete="off"
+    <>
+      <button
+        type="button"
+        className="archive-trigger"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        {tx(locale, "archive")}
+        <span className="archive-trigger__count">{count}</span>
+      </button>
+
+      {open ? (
+        <div className="archive no-print">
+          <button
+            type="button"
+            className="archive__scrim"
+            aria-label={tx(locale, "close")}
+            onClick={() => setOpen(false)}
           />
-        </label>
+          <aside
+            className="archive__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+          >
+            <header className="archive__head">
+              <div>
+                <p id={titleId} className="archive__title">
+                  {tx(locale, "archive")}
+                </p>
+                <p className="archive__hint">{tx(locale, "archiveHint")}</p>
+              </div>
+              <button
+                type="button"
+                className="archive__close"
+                onClick={() => setOpen(false)}
+              >
+                {tx(locale, "close")}
+              </button>
+            </header>
+
+            {visible.length > 2 ? (
+              <label className="archive__search">
+                <span className="sr-only">{tx(locale, "searchRecent")}</span>
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={tx(locale, "searchRecent")}
+                  autoComplete="off"
+                  autoFocus
+                />
+              </label>
+            ) : null}
+
+            <div className="archive__list">
+              {filtered.length === 0 ? (
+                <p className="archive__empty">{tx(locale, "noRecentMatch")}</p>
+              ) : (
+                filtered.map((r) => (
+                  <article key={r.id} className="archive-row">
+                    <Link
+                      href={`/rutina/${r.id}`}
+                      className="archive-row__main"
+                      onClick={() => setOpen(false)}
+                    >
+                      <span className="archive-row__name">{r.clientName}</span>
+                      <span className="archive-row__goal">{r.objective}</span>
+                    </Link>
+                    {r.updatedAt ? (
+                      <time
+                        className="archive-row__when"
+                        dateTime={r.updatedAt}
+                      >
+                        {formatWhen(r.updatedAt, locale)}
+                      </time>
+                    ) : null}
+                    <div className="archive-row__tools">
+                      <button
+                        type="button"
+                        disabled={busyId === r.id}
+                        onClick={() => handleDuplicate(r.id)}
+                      >
+                        {tx(locale, "archiveBase")}
+                      </button>
+                      <button
+                        type="button"
+                        className="is-danger"
+                        disabled={busyId === r.id}
+                        onClick={() => handleDelete(r.id, r.clientName)}
+                      >
+                        {tx(locale, "delete")}
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </aside>
+        </div>
       ) : null}
-      <div className="recent-list">
-        {filtered.length === 0 ? (
-          <p className="recent-empty">{tx(locale, "noRecentMatch")}</p>
-        ) : (
-          filtered.map((r) => (
-          <article key={r.id} className="recent-card">
-            <div>
-              <h3 className="recent-card__title">{r.clientName}</h3>
-              <p className="recent-card__meta">
-                {r.objective}
-                {r.updatedAt ? ` · ${formatWhen(r.updatedAt, locale)}` : ""}
-              </p>
-            </div>
-            <div className="recent-card__actions no-print">
-              <Link href={`/rutina/${r.id}`} className="btn btn--soft">
-                {tx(locale, "open")}
-              </Link>
-              <button
-                type="button"
-                className="btn btn--soft"
-                disabled={busyId === r.id}
-                onClick={() => handleDuplicate(r.id)}
-              >
-                {tx(locale, "useAsBase")}
-              </button>
-              <button
-                type="button"
-                className="btn btn--danger"
-                disabled={busyId === r.id}
-                onClick={() => handleDelete(r.id, r.clientName)}
-              >
-                {tx(locale, "delete")}
-              </button>
-            </div>
-          </article>
-          ))
-        )}
-      </div>
-    </section>
+    </>
   );
 }

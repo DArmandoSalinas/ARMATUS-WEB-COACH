@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { BrandMark } from "./BrandMark";
 import { LocaleToggle } from "./LocaleToggle";
+import { RecentRoutines } from "./RecentRoutines";
 import { ThemeToggle } from "./ThemeToggle";
 
 type SiteTopbarProps = {
@@ -18,6 +19,7 @@ export function SiteTopbar({ end }: SiteTopbarProps) {
       </Link>
       <div className="site-topbar__end">
         {end}
+        <RecentRoutines />
         <LocaleToggle />
         <ThemeToggle />
       </div>
