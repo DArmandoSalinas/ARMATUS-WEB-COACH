@@ -152,6 +152,23 @@ export async function attachBocetos(
   );
 }
 
+const BOCETO_SIZE = "1536x1024" as const;
+/** High is 4× slower/costlier; medium is enough for neon line art. */
+const BOCETO_QUALITY = "medium" as const;
+const BOCETO_FORMAT = "jpeg" as const;
+const BOCETO_MIME = "image/jpeg";
+
+async function dataUrlFromOpenAiImage(image: {
+  b64_json?: string;
+  url?: string;
+}): Promise<string | undefined> {
+  if (image.b64_json) return `data:${BOCETO_MIME};base64,${image.b64_json}`;
+  if (!image.url) return undefined;
+  const res = await fetch(image.url);
+  const buf = Buffer.from(await res.arrayBuffer());
+  return `data:${BOCETO_MIME};base64,${buf.toString("base64")}`;
+}
+
 async function generateAiBoceto(ctx: BocetoPromptContext): Promise<string> {
   const client = openaiClient();
   const brief = buildVisualBrief(ctx);
@@ -173,19 +190,17 @@ Keep THAT exact man (hair, face, body, shorts/sneakers) and white/orange-on-blac
 Do NOT copy equipment from the references. Locked equipment: ${brief.equipment}
 Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
           // Landscape matches library bocetos (~3:2) and sketch UI
-          size: "1536x1024",
-          quality: "high",
+          size: BOCETO_SIZE,
+          quality: BOCETO_QUALITY,
+          output_format: BOCETO_FORMAT,
+          output_compression: 86,
           // low = keep identity/style cues but allow a new pose/exercise
           input_fidelity: "low",
         });
-        const b64 = edited.data?.[0]?.b64_json;
-        if (b64) return `data:image/png;base64,${b64}`;
-        const url = edited.data?.[0]?.url;
-        if (url) {
-          const res = await fetch(url);
-          const buf = Buffer.from(await res.arrayBuffer());
-          return `data:image/png;base64,${buf.toString("base64")}`;
-        }
+        const url = edited.data?.[0]
+          ? await dataUrlFromOpenAiImage(edited.data[0])
+          : undefined;
+        if (url) return url;
       }
     } catch (err) {
       console.warn(
@@ -198,17 +213,15 @@ Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
       const result = await client.images.generate({
         model: "gpt-image-1",
         prompt,
-        size: "1536x1024",
-        quality: "high",
+        size: BOCETO_SIZE,
+        quality: BOCETO_QUALITY,
+        output_format: BOCETO_FORMAT,
+        output_compression: 86,
       });
-      const b64 = result.data?.[0]?.b64_json;
-      if (b64) return `data:image/png;base64,${b64}`;
-      const url = result.data?.[0]?.url;
-      if (url) {
-        const res = await fetch(url);
-        const buf = Buffer.from(await res.arrayBuffer());
-        return `data:image/png;base64,${buf.toString("base64")}`;
-      }
+      const url = result.data?.[0]
+        ? await dataUrlFromOpenAiImage(result.data[0])
+        : undefined;
+      if (url) return url;
     } catch (err) {
       console.warn("[boceto] gpt-image generate failed", err);
     }
@@ -271,7 +284,7 @@ Reference style + SAME athlete as ARMATUS library bocetos — neon dual-line art
       width: 1536,
       height: 1024,
     },
-    num_inference_steps: 36,
+    num_inference_steps: 28,
     guidance_scale: 3.8,
     enable_safety_checker: true,
     output_format: "png",

@@ -98,6 +98,7 @@ export function RevisionPanel({
         imageRegenIds = Array.isArray(data.imageRegenIds)
           ? data.imageRegenIds
           : [];
+        await onRevised(next);
       }
 
       const forceAllBocetos =
@@ -115,6 +116,15 @@ export function RevisionPanel({
           {
             forceAi: intent.wantsNewBocetos,
             forceIds: forceAllBocetos ? undefined : imageRegenIds,
+            onExercise: (ex) => {
+              next = {
+                ...next,
+                exercises: next.exercises.map((e) =>
+                  e.id === ex.id ? { ...e, imageDataUrl: ex.imageDataUrl } : e,
+                ),
+              };
+              void onRevised(next);
+            },
           },
         );
         next = withImages;

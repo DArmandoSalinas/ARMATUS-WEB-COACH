@@ -107,20 +107,57 @@ export function RoutinePreview({
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (cancelled) return;
-      void fillMissingBocetos(null, snapshot, (msg) => {
-        if (!cancelled) setBocetoStatus(msg);
-      }).then(({ routine: filled, failedNames }) => {
-        if (cancelled) return;
-        for (const ex of filled.exercises) {
-          if (ex.imageDataUrl) {
-            updateExercise(ex.id, { imageDataUrl: ex.imageDataUrl });
+      const pendingIds = snapshot.exercises
+        .filter((ex) => !ex.imageDataUrl)
+        .map((ex) => ex.id);
+      if (pendingIds.length > 0) {
+        setBusyMap((m) => {
+          const next = { ...m };
+          for (const id of pendingIds) {
+            next[id] = { ...next[id], image: true };
           }
-        }
+          return next;
+        });
+      }
+      void fillMissingBocetos(
+        null,
+        snapshot,
+        (msg) => {
+          if (!cancelled) setBocetoStatus(msg);
+        },
+        {
+          onExercise: (ex) => {
+            if (cancelled || !ex.imageDataUrl) return;
+            updateExercise(ex.id, { imageDataUrl: ex.imageDataUrl });
+            setBusyMap((m) => ({
+              ...m,
+              [ex.id]: { ...m[ex.id], image: false },
+            }));
+          },
+        },
+      ).then(({ failedNames }) => {
+        if (cancelled) return;
+        setBusyMap((m) => {
+          const next = { ...m };
+          for (const id of pendingIds) {
+            next[id] = { ...next[id], image: false };
+          }
+          return next;
+        });
         setBocetoStatus(
           failedNames.length > 0
             ? `${failedNames.length} ${tx(locale, "statusBocetosFail")}`
             : null,
         );
+      }).catch(() => {
+        if (cancelled) return;
+        setBusyMap((m) => {
+          const next = { ...m };
+          for (const id of pendingIds) {
+            next[id] = { ...next[id], image: false };
+          }
+          return next;
+        });
       });
     }, 0);
     return () => {
@@ -272,7 +309,7 @@ export function RoutinePreview({
     setPdfBusy(true);
     try {
       const { downloadRoutinePdf } = await import("@/lib/pdf/downloadPdf");
-      await downloadRoutinePdf(live.clientName, live, viewMode);
+      await downloadRoutinePdf(live.clientName, live, viewMode, locale);
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "Error desconocido";

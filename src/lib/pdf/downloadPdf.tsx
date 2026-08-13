@@ -4,6 +4,7 @@ import { pdf, Font } from "@react-pdf/renderer";
 import type { DocumentProps } from "@react-pdf/renderer";
 import type { ReactElement } from "react";
 import type { Routine } from "@/lib/types";
+import type { Locale } from "@/lib/i18n";
 import { RoutineDocument, type PdfVariant } from "./RoutineDocument";
 
 export type { PdfVariant };
@@ -167,36 +168,39 @@ async function renderBlob(
   routine: Routine,
   useFallbackFonts: boolean,
   variant: PdfVariant,
+  locale: Locale,
 ): Promise<Blob> {
   const doc = (
     <RoutineDocument
       routine={routine}
       useFallbackFonts={useFallbackFonts}
       variant={variant}
+      locale={locale}
     />
   ) as unknown as ReactElement<DocumentProps>;
   return pdf(doc).toBlob();
 }
 
 /**
- * Multi-page PDF. `clara` uses the same one-page layout as studio, light colors.
+ * Multi-page PDF. `clara` uses the same layout as studio, light colors.
  */
 export async function downloadRoutinePdf(
   clientName: string,
   routine: Routine,
   variant: PdfVariant = "studio",
+  locale: Locale = "es",
 ): Promise<void> {
   const customFontsOk = await ensureFonts();
   const prepared = await hydrateImages(routine);
 
   let blob: Blob;
   try {
-    blob = await renderBlob(prepared, !customFontsOk, variant);
+    blob = await renderBlob(prepared, !customFontsOk, variant, locale);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (!customFontsOk || !/font/i.test(msg)) throw err;
     console.warn("[pdf] Retrying with Helvetica after font error", err);
-    blob = await renderBlob(prepared, true, variant);
+    blob = await renderBlob(prepared, true, variant, locale);
   }
 
   const url = URL.createObjectURL(blob);

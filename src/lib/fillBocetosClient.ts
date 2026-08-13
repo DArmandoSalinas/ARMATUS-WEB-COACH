@@ -1,3 +1,4 @@
+import { resolveBocetoPath } from "./bocetoMatch";
 import { fetchJson } from "./http";
 import type { Exercise, Routine } from "./types";
 
@@ -13,6 +14,8 @@ export type BocetoFillOptions = {
   forceAi?: boolean;
   /** These exercise ids must be redrawn even if a previous image exists. */
   forceIds?: string[];
+  /** Fired as soon as each exercise gets an image (library or AI). */
+  onExercise?: (exercise: Exercise) => void;
 };
 
 async function mapPool<T>(
@@ -64,6 +67,21 @@ export async function fillMissingBocetos(
       continue;
     }
     if (!mustRegen && ex.imageDataUrl) continue;
+
+    const skipLibrary = mustRegen && opts?.forceAi === true;
+    if (!skipLibrary) {
+      const path = resolveBocetoPath(ex.name, {
+        nameEn: ex.nameEn,
+        sketchCaption: ex.sketchCaption,
+        intro: ex.intro,
+        purpose: ex.purpose,
+      });
+      if (path) {
+        exercises[i] = { ...ex, imageDataUrl: path };
+        opts?.onExercise?.(exercises[i]);
+        continue;
+      }
+    }
     pending.push(i);
   }
 
@@ -74,8 +92,6 @@ export async function fillMissingBocetos(
       const i = pending[slot];
       const ex = exercises[i];
       const mustRegen = forceAll || forceIds.has(ex.id);
-      // Skip library when the coach asked to redraw this exercise.
-      // Equipment/name changes without forceAi still allow a library match.
       const skipLibrary = mustRegen && opts?.forceAi === true;
 
       try {
@@ -103,6 +119,7 @@ export async function fillMissingBocetos(
           throw new Error(data.error || "Error de boceto");
         }
         exercises[i] = { ...ex, imageDataUrl: data.imageDataUrl };
+        opts?.onExercise?.(exercises[i]);
       } catch {
         failedNames.push(ex.name);
         exercises[i] = mustRegen ? { ...ex, imageDataUrl: undefined } : ex;

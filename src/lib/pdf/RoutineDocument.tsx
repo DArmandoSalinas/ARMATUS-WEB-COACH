@@ -7,6 +7,7 @@ import {
   Link,
   StyleSheet,
 } from "@react-pdf/renderer";
+import { tx, type Locale } from "@/lib/i18n";
 import type { Exercise, Routine } from "@/lib/types";
 
 export type PdfVariant = "studio" | "clara";
@@ -103,13 +104,13 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   eyebrowRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
     marginBottom: 16,
   },
   eyebrowLine: {
     width: 16,
     height: 2,
     backgroundColor: C.orange,
+    marginRight: 8,
   },
   eyebrow: {
     fontFamily: display,
@@ -141,7 +142,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   metaRow: {
     flexDirection: "row",
-    gap: 8,
     flexWrap: "wrap",
   },
   metaChip: {
@@ -154,6 +154,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     paddingVertical: 10,
     paddingHorizontal: 8,
     alignItems: "center",
+    marginRight: 8,
+    marginBottom: 8,
   },
   metaValue: {
     fontFamily: display,
@@ -205,14 +207,16 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   exHead: {
     flexDirection: "row",
-    gap: 12,
+    alignItems: "flex-start",
     marginBottom: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
   exHeadMain: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    marginRight: 12,
   },
   exTitle: {
     fontFamily: display,
@@ -233,6 +237,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   doseBox: {
     width: 118,
+    flexShrink: 0,
+    flexDirection: "column",
     backgroundColor: clara ? "#FFFFFF" : "rgba(0,0,0,0.55)",
     borderWidth: 1,
     borderColor: "rgba(255,107,53,0.4)",
@@ -298,13 +304,20 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     fontFamily: display,
     fontWeight: 700,
   },
-  grid2: {
+  row: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "flex-start",
     marginBottom: 8,
   },
+  colLeft: {
+    width: "48.5%",
+    marginRight: "3%",
+  },
+  colRight: {
+    width: "48.5%",
+  },
   block: {
-    flex: 1,
+    flexDirection: "column",
     backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.9)",
     borderWidth: 1,
     borderColor: C.border,
@@ -328,7 +341,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   tags: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 3,
   },
   tag: {
     backgroundColor: "rgba(255,107,53,0.12)",
@@ -339,9 +351,11 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     paddingHorizontal: 5,
     fontSize: 7.5,
     color: C.orangeSoft,
-    marginBottom: 2,
+    marginRight: 4,
+    marginBottom: 4,
   },
   stepsBlock: {
+    flexDirection: "column",
     backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.9)",
     borderWidth: 1,
     borderColor: C.border,
@@ -349,18 +363,22 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     padding: 9,
     marginBottom: 8,
   },
-  stepsGrid: {
+  stepsRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
+    alignItems: "flex-start",
+    marginBottom: 6,
   },
   step: {
-    width: "48.5%",
+    flexDirection: "column",
+    width: "47%",
     backgroundColor: clara ? "#F3EFE8" : "rgba(0,0,0,0.4)",
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 7,
     padding: 7,
+  },
+  stepGap: {
+    marginRight: "6%",
   },
   stepN: {
     fontFamily: display,
@@ -376,12 +394,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     lineHeight: 1.32,
     color: C.muted,
   },
-  split: {
-    flexDirection: "row",
-    gap: 8,
-  },
   warn: {
-    flex: 1,
+    flexDirection: "column",
     backgroundColor: clara ? "rgba(180,35,24,0.08)" : "rgba(255,69,58,0.08)",
     borderWidth: 1,
     borderColor: clara ? "rgba(180,35,24,0.28)" : "rgba(255,69,58,0.28)",
@@ -389,7 +403,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     padding: 9,
   },
   benefit: {
-    flex: 1,
+    flexDirection: "column",
     backgroundColor: clara ? "rgba(210,74,22,0.08)" : "rgba(255,107,53,0.08)",
     borderWidth: 1,
     borderColor: clara ? "rgba(210,74,22,0.28)" : "rgba(255,107,53,0.28)",
@@ -421,6 +435,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     marginBottom: 4,
   },
   support: {
+    flexDirection: "column",
     marginTop: 8,
     backgroundColor: clara ? "#FFFFFF" : "rgba(142,142,147,0.1)",
     borderWidth: 1,
@@ -463,7 +478,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   tocItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
@@ -479,6 +493,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     fontSize: 11,
     textAlign: "center",
     paddingTop: 7,
+    marginRight: 10,
   },
   tocLabel: {
     fontFamily: display,
@@ -505,17 +520,43 @@ function splitTitle(objective: string) {
   };
 }
 
+function levelLabel(level: string, locale: Locale): string {
+  if (level === "principiante") return tx(locale, "levelBeg");
+  if (level === "avanzado") return tx(locale, "levelAdv");
+  if (level === "intermedio") return tx(locale, "levelMid");
+  return level;
+}
+
+function exerciseTitles(exercise: Exercise, locale: Locale) {
+  if (locale === "en") {
+    const primary = exercise.nameEn?.trim() || exercise.name;
+    const secondary =
+      exercise.nameEn?.trim() &&
+      exercise.name.trim() !== exercise.nameEn.trim()
+        ? exercise.name
+        : undefined;
+    return { primary, secondary };
+  }
+  return {
+    primary: exercise.name,
+    secondary: exercise.nameEn?.trim() || undefined,
+  };
+}
+
 function CoverPage({
   routine,
   styles: s,
   variant,
+  locale,
 }: {
   routine: Routine;
   styles: ReturnType<typeof createStyles>;
   variant: PdfVariant;
+  locale: Locale;
 }) {
   const { main, accent } = splitTitle(routine.objective);
   const exercises = [...routine.exercises].sort((a, b) => a.order - b.order);
+  const blockWord = tx(locale, "blocks").toLowerCase();
 
   return (
     <Page size="A4" style={s.coverPage}>
@@ -534,7 +575,9 @@ function CoverPage({
 
         <View style={s.eyebrowRow}>
           <View style={s.eyebrowLine} />
-          <Text style={s.eyebrow}>Rutina para {routine.clientName}</Text>
+          <Text style={s.eyebrow}>
+            {tx(locale, "routineFor")} {routine.clientName}
+          </Text>
         </View>
 
         <Text style={s.coverTitle}>
@@ -545,31 +588,29 @@ function CoverPage({
         </Text>
 
         <Text style={s.lead}>
-          {variant === "clara"
-            ? "Guía fácil de leer: cómo hacer cada ejercicio, cuántas repeticiones, errores a evitar y bocetos ARMATUS."
-            : "Protocolo biomecánico con dosificación, ejecución técnica, errores comunes y bocetos ARMATUS — listo para entrenar."}
+          {tx(locale, variant === "clara" ? "leadClara" : "leadStudio")}
         </Text>
 
         <View style={s.metaRow}>
           <View style={s.metaChip}>
             <Text style={s.metaValue}>{exercises.length}</Text>
-            <Text style={s.metaLabel}>Bloques</Text>
+            <Text style={s.metaLabel}>{tx(locale, "blocks")}</Text>
           </View>
           {routine.duration ? (
             <View style={s.metaChip}>
               <Text style={s.metaValue}>{routine.duration}</Text>
-              <Text style={s.metaLabel}>Duración</Text>
+              <Text style={s.metaLabel}>{tx(locale, "durationChip")}</Text>
             </View>
           ) : null}
           {routine.frequency ? (
             <View style={s.metaChip}>
               <Text style={s.metaValue}>{routine.frequency}</Text>
-              <Text style={s.metaLabel}>Frecuencia</Text>
+              <Text style={s.metaLabel}>{tx(locale, "frequencyChip")}</Text>
             </View>
           ) : null}
           <View style={s.metaChip}>
-            <Text style={s.metaValue}>{routine.level}</Text>
-            <Text style={s.metaLabel}>Nivel</Text>
+            <Text style={s.metaValue}>{levelLabel(routine.level, locale)}</Text>
+            <Text style={s.metaLabel}>{tx(locale, "levelChip")}</Text>
           </View>
           {routine.coachName ? (
             <View style={s.metaChip}>
@@ -588,18 +629,17 @@ function CoverPage({
               paddingBottom: 0,
             }}
           >
-            Protocolo listo para entrenar
+            {tx(locale, "pdfReady")}
           </Text>
           <Text style={s.lead}>
-            {exercises.length} bloque{exercises.length === 1 ? "" : "s"} · el
-            índice va en la página siguiente.
+            {exercises.length} {blockWord} · {tx(locale, "pdfIndexNext")}
           </Text>
         </View>
       </View>
 
       <View style={s.coverFooter} fixed>
         <Text style={s.coverFooterText}>
-          ARMATUS · Protocolo de fuerza · {routine.clientName}
+          ARMATUS · {tx(locale, "pdfStrength")} · {routine.clientName}
           {routine.coachName ? ` · Coach ${routine.coachName}` : ""}
         </Text>
       </View>
@@ -610,30 +650,49 @@ function CoverPage({
 function TocPage({
   routine,
   styles: s,
+  locale,
 }: {
   routine: Routine;
   styles: ReturnType<typeof createStyles>;
+  locale: Locale;
 }) {
   const exercises = [...routine.exercises].sort((a, b) => a.order - b.order);
   return (
     <Page size="A4" style={s.page}>
-      <Text style={s.eyebrow}>Contenido</Text>
-      <Text style={{ ...s.exTitle, marginBottom: 16 }}>Índice de bloques</Text>
-      {exercises.map((ex, i) => (
-        <View key={ex.id} style={s.tocItem} wrap={false}>
-          <Text style={s.tocNum}>{String(i + 1).padStart(2, "0")}</Text>
-          <View>
-            <Text style={s.tocLabel}>{ex.name}</Text>
-            <Text style={s.tocBadge}>{ex.badge}</Text>
+      <Text style={s.eyebrow}>{tx(locale, "pdfContents")}</Text>
+      <Text style={{ ...s.exTitle, marginBottom: 16 }}>
+        {tx(locale, "pdfToc")}
+      </Text>
+      {exercises.map((ex, i) => {
+        const { primary } = exerciseTitles(ex, locale);
+        return (
+          <View key={ex.id} style={s.tocItem} wrap={false}>
+            <Text style={s.tocNum}>{String(i + 1).padStart(2, "0")}</Text>
+            <View>
+              <Text style={s.tocLabel}>{primary}</Text>
+              <Text style={s.tocBadge}>{ex.badge}</Text>
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
       <View style={s.pageFooter} fixed>
         <Text style={s.pageFooterText}>ARMATUS · {routine.clientName}</Text>
-        <Text style={s.pageFooterText}>Índice</Text>
+        <Text style={s.pageFooterText}>{tx(locale, "pdfIndex")}</Text>
       </View>
     </Page>
   );
+}
+
+function localizeSupportLabel(
+  label: string | undefined,
+  url: string,
+  locale: Locale,
+): string {
+  const raw = (label || url).trim();
+  if (locale !== "en") return raw;
+  if (/buscar t[eé]cnica/i.test(raw)) return "Search technique on YouTube";
+  if (/video de t[eé]cnica/i.test(raw)) return "Technique video";
+  return raw;
 }
 
 function clip(text: string, max: number): string {
@@ -647,11 +706,13 @@ function ExercisePage({
   index,
   routine,
   styles: s,
+  locale,
 }: {
   exercise: Exercise;
   index: number;
   routine: Routine;
   styles: ReturnType<typeof createStyles>;
+  locale: Locale;
 }) {
   const img = exercise.imageDataUrl;
   const doseMeta = [exercise.dose.rpe, exercise.dose.rest]
@@ -660,25 +721,30 @@ function ExercisePage({
   const pageLabel = `${String(index + 1).padStart(2, "0")} / ${String(routine.exercises.length).padStart(2, "0")}`;
   const steps = exercise.steps.slice(0, 4);
   const mistakes = exercise.commonMistakes.filter(Boolean).slice(0, 3);
+  const { primary, secondary } = exerciseTitles(exercise, locale);
+  const stepRows: (typeof steps)[] = [];
+  for (let i = 0; i < steps.length; i += 2) {
+    stepRows.push(steps.slice(i, i + 2));
+  }
 
   return (
-    <Page size="A4" style={s.page} wrap={false}>
+    <Page size="A4" style={s.page}>
       <View style={s.exBadge}>
         <Text style={s.exBadgeText}>{exercise.badge}</Text>
       </View>
 
-      <View style={s.exHead} wrap={false}>
+      <View style={s.exHead}>
         <View style={s.exHeadMain}>
           <Text style={s.exTitle}>
-            {clip(exercise.name, 48)}
-            {exercise.nameEn ? (
-              <Text style={s.exTitleEm}>{` (${clip(exercise.nameEn, 28)})`}</Text>
+            {clip(primary, 48)}
+            {secondary ? (
+              <Text style={s.exTitleEm}>{` (${clip(secondary, 28)})`}</Text>
             ) : null}
           </Text>
           <Text style={s.exIntro}>{clip(exercise.intro, 220)}</Text>
         </View>
         <View style={s.doseBox}>
-          <Text style={s.doseLabel}>Dosificación</Text>
+          <Text style={s.doseLabel}>{tx(locale, "pdfDose")}</Text>
           <Text style={s.doseValue}>{clip(exercise.dose.setsReps, 28)}</Text>
           {doseMeta ? (
             <Text style={s.doseMeta}>{clip(doseMeta, 36)}</Text>
@@ -687,26 +753,31 @@ function ExercisePage({
       </View>
 
       {img ? (
-        <View wrap={false}>
+        <View>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <Image key={`${exercise.id}-boceto`} src={img} style={s.sketch} cache={false} />
+          <Image
+            key={`${exercise.id}-boceto`}
+            src={img}
+            style={s.sketch}
+            cache={false}
+          />
           <Text style={s.sketchCaption}>
-            Boceto · {clip(exercise.sketchCaption, 72)}
+            {tx(locale, "pdfSketch")} · {clip(exercise.sketchCaption, 72)}
           </Text>
         </View>
       ) : (
-        <View style={s.sketchMissing} wrap={false}>
-          <Text style={s.sketchMissingText}>Boceto pendiente</Text>
+        <View style={s.sketchMissing}>
+          <Text style={s.sketchMissingText}>{tx(locale, "sketchPending")}</Text>
         </View>
       )}
 
-      <View style={s.grid2}>
-        <View style={s.block} wrap={false}>
-          <Text style={s.blockTitle}>Propósito y enfoque</Text>
+      <View style={s.row}>
+        <View style={[s.block, s.colLeft]}>
+          <Text style={s.blockTitle}>{tx(locale, "purpose")}</Text>
           <Text style={s.blockBody}>{clip(exercise.purpose, 280)}</Text>
         </View>
-        <View style={s.block} wrap={false}>
-          <Text style={s.blockTitle}>Enfoque muscular</Text>
+        <View style={[s.block, s.colRight]}>
+          <Text style={s.blockTitle}>{tx(locale, "muscles")}</Text>
           <View style={s.tags}>
             {exercise.muscles.slice(0, 6).map((m) => (
               <Text key={m} style={s.tag}>
@@ -717,39 +788,44 @@ function ExercisePage({
         </View>
       </View>
 
-      <View style={s.stepsBlock} wrap={false}>
-        <Text style={s.blockTitle}>Cómo ejecutarlo</Text>
-        <View style={s.stepsGrid}>
-          {steps.map((step, i) => (
-            <View key={`${exercise.id}-s-${i}`} style={s.step} wrap={false}>
-              <Text style={s.stepN}>{clip(step.title, 28)}</Text>
-              <Text style={s.stepBody}>{clip(step.body, 160)}</Text>
-            </View>
-          ))}
-        </View>
+      <View style={s.stepsBlock}>
+        <Text style={s.blockTitle}>{tx(locale, "howTo")}</Text>
+        {stepRows.map((row, ri) => (
+          <View key={`${exercise.id}-sr-${ri}`} style={s.stepsRow}>
+            {row.map((step, i) => (
+              <View
+                key={`${exercise.id}-s-${ri}-${i}`}
+                style={i === 0 && row.length > 1 ? [s.step, s.stepGap] : s.step}
+              >
+                <Text style={s.stepN}>{clip(step.title, 28)}</Text>
+                <Text style={s.stepBody}>{clip(step.body, 160)}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
       </View>
 
-      <View style={s.split} wrap={false}>
-        <View style={s.warn} wrap={false}>
-          <Text style={s.warnTitle}>Errores comunes</Text>
+      <View style={s.row}>
+        <View style={[s.warn, s.colLeft]}>
+          <Text style={s.warnTitle}>{tx(locale, "mistakes")}</Text>
           {mistakes.map((m, i) => (
             <Text key={`${exercise.id}-m-${i}`} style={s.listItem}>
               • {clip(m, 110)}
             </Text>
           ))}
         </View>
-        <View style={s.benefit} wrap={false}>
-          <Text style={s.benefitTitle}>Beneficio</Text>
+        <View style={[s.benefit, s.colRight]}>
+          <Text style={s.benefitTitle}>{tx(locale, "benefit")}</Text>
           <Text style={s.blockBody}>{clip(exercise.benefit, 220)}</Text>
         </View>
       </View>
 
       {(exercise.supportLinks ?? []).length > 0 ? (
-        <View style={s.support} wrap={false}>
-          <Text style={s.supportTitle}>Apoyo adicional</Text>
+        <View style={s.support}>
+          <Text style={s.supportTitle}>{tx(locale, "support")}</Text>
           {(exercise.supportLinks ?? []).slice(0, 3).map((link) => (
             <Link key={link.url} src={link.url} style={s.supportLink}>
-              {clip(link.label || link.url, 72)}
+              {clip(localizeSupportLabel(link.label, link.url, locale), 72)}
             </Link>
           ))}
         </View>
@@ -767,23 +843,32 @@ export function RoutineDocument({
   routine,
   useFallbackFonts = false,
   variant = "studio",
+  locale = "es",
 }: {
   routine: Routine;
   useFallbackFonts?: boolean;
   variant?: PdfVariant;
+  locale?: Locale;
 }) {
   const s = createStyles(useFallbackFonts, variant);
   const exercises = [...routine.exercises].sort((a, b) => a.order - b.order);
+  const claraMark =
+    variant === "clara" ? ` (${tx(locale, "pdfClaraMark")})` : "";
 
   return (
     <Document
-      title={`ARMATUS · ${routine.clientName}${variant === "clara" ? " (versión clara)" : ""}`}
+      title={`ARMATUS · ${routine.clientName}${claraMark}`}
       author={routine.coachName || "ARMATUS Coach Studio"}
       subject={routine.objective}
       creator="ARMATUS Coach Studio"
     >
-      <CoverPage routine={routine} styles={s} variant={variant} />
-      <TocPage routine={routine} styles={s} />
+      <CoverPage
+        routine={routine}
+        styles={s}
+        variant={variant}
+        locale={locale}
+      />
+      <TocPage routine={routine} styles={s} locale={locale} />
       {exercises.map((ex, i) => (
         <ExercisePage
           key={ex.id}
@@ -791,6 +876,7 @@ export function RoutineDocument({
           index={i}
           routine={routine}
           styles={s}
+          locale={locale}
         />
       ))}
     </Document>

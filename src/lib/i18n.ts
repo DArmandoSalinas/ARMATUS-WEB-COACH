@@ -262,6 +262,15 @@ Plancha Copenhagen — 3 × 20–30 s/lado`,
   undoOk: "Se restauró la versión anterior.",
   searchRecent: "Buscar atleta u objetivo",
   noRecentMatch: "Ninguna rutina coincide con esa búsqueda.",
+  pdfDose: "Dosificación",
+  pdfContents: "Contenido",
+  pdfToc: "Índice de bloques",
+  pdfSketch: "Boceto",
+  pdfReady: "Protocolo listo para entrenar",
+  pdfIndex: "Índice",
+  pdfIndexNext: "el índice va en la página siguiente",
+  pdfStrength: "Protocolo de fuerza",
+  pdfClaraMark: "versión clara",
 } as const;
 
 const en: { [K in keyof typeof es]: string } = {
@@ -484,6 +493,15 @@ Copenhagen plank — 3 × 20–30 s/side`,
   undoOk: "The previous version was restored.",
   searchRecent: "Search athlete or goal",
   noRecentMatch: "No session matches that search.",
+  pdfDose: "Dose",
+  pdfContents: "Contents",
+  pdfToc: "Block index",
+  pdfSketch: "Sketch",
+  pdfReady: "Protocol ready to train",
+  pdfIndex: "Index",
+  pdfIndexNext: "the index is on the next page",
+  pdfStrength: "Strength protocol",
+  pdfClaraMark: "light version",
 };
 
 export const COPY = { es, en } as const;
