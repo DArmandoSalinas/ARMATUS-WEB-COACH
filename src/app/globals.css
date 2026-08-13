@@ -137,12 +137,16 @@ html.has-routines-dock body {
 
 .routines-dock {
   position: fixed;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
   z-index: 80;
   pointer-events: none;
 }
 
 .routines-dock[data-open="true"] {
+  inset: 0;
   pointer-events: auto;
 }
 
@@ -159,12 +163,12 @@ html.has-routines-dock body {
 .routines-dock__sheet {
   pointer-events: auto;
   position: absolute;
-  left: 16px;
+  left: max(12px, env(safe-area-inset-left, 0px));
   bottom: 0;
-  width: min(720px, calc(100vw - 32px));
+  width: min(720px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   display: flex;
   flex-direction: column;
-  max-height: min(78vh, 760px);
+  max-height: min(78dvh, 760px);
   background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border));
   border-bottom: 0;
@@ -172,6 +176,11 @@ html.has-routines-dock body {
   box-shadow:
     0 -18px 50px rgba(0, 0, 0, 0.28),
     0 0 0 1px color-mix(in srgb, var(--primary) 12%, transparent);
+  overscroll-behavior: contain;
+}
+
+.routines-dock[data-open="true"] .routines-dock__sheet {
+  min-height: 0;
 }
 
 .routines-dock[data-open="false"] .routines-dock__sheet {
@@ -192,12 +201,14 @@ html.has-routines-dock body {
   justify-content: center;
   gap: 10px;
   min-height: 52px;
-  padding: 10px 22px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 18px calc(10px + env(safe-area-inset-bottom, 0px));
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 0.78rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .routines-dock[data-open="true"] .routines-dock__tab {
@@ -226,7 +237,8 @@ html.has-routines-dock body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 8px 18px 20px;
+  flex: 1;
+  padding: 8px 18px calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 .routines-dock__head {
@@ -343,7 +355,11 @@ html.has-routines-dock body {
   display: grid;
   gap: 12px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding-bottom: 8px;
+  min-height: 0;
+  flex: 1;
 }
 
 .routines-dock__empty {
@@ -450,6 +466,79 @@ html.has-routines-dock body {
 
 .routine-card__tools button.is-danger:hover {
   color: var(--error);
+}
+
+@media (max-width: 720px) {
+  html.has-routines-dock body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .routines-dock[data-open="true"] .routines-dock__sheet {
+    left: 0;
+    width: 100%;
+    max-height: min(88dvh, 100dvh);
+    border-radius: 18px 18px 0 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .routines-dock[data-open="false"] .routines-dock__sheet {
+    min-width: 0;
+  }
+
+  .routines-dock__tab {
+    min-height: 48px;
+    gap: 8px;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+  }
+
+  .routines-dock__body {
+    padding: 6px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .routines-dock__search input {
+    font-size: 16px;
+  }
+
+  .routines-dock__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .routines-dock__chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .routines-dock__chip-label {
+    flex-shrink: 0;
+  }
+
+  .routines-dock__chips button {
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+
+  .routine-card {
+    padding: 12px 14px 10px;
+  }
+
+  .routine-card__name {
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+  }
+
+  .routine-card__tools {
+    gap: 12px;
+  }
+
+  .routine-card__tools button {
+    min-height: 44px;
+  }
 }
 
 .theme-toggle {

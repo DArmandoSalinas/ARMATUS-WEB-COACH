@@ -182,7 +182,7 @@ export function RecentRoutines() {
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={tx(locale, "filterKeywordsPh")}
                   autoComplete="off"
-                  autoFocus
+                  enterKeyHint="search"
                 />
               </label>
 
