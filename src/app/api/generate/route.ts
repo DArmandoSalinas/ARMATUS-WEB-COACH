@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateRoutineFromPrompt } from "@/lib/openai";
+import { openaiPublicMessage, openaiRouteStatus } from "@/lib/openaiError";
 
 export const maxDuration = 300;
 
@@ -31,10 +32,8 @@ export async function POST(req: Request) {
     const routine = await generateRoutineFromPrompt(prompt, coachName, locale);
     return NextResponse.json({ routine });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Error al generar la rutina.";
-    const status = message.includes("OPENAI_API_KEY") ? 503 : 502;
+    const message = openaiPublicMessage(err, "Error al generar la rutina.");
     console.error("[api/generate]", err);
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: openaiRouteStatus(err) });
   }
 }

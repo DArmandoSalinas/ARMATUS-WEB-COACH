@@ -143,6 +143,8 @@ Plancha Copenhagen — 3 × 20–30 s/lado`,
   statusDone: "Rutina lista",
   statusError: "Error — puedes volver a generar",
   errorCoach: "Escribe el nombre del coach antes de generar.",
+  errorCredits:
+    "Se acabaron los créditos de OpenAI. Recarga saldo en platform.openai.com → Billing y vuelve a generar.",
   errorQuota:
     "El almacenamiento del navegador estaba lleno. Ya lo liberamos: vuelve a generar la rutina.",
   errorTimeout:
@@ -391,6 +393,8 @@ Copenhagen plank — 3 × 20–30 s/side`,
   statusDone: "Session ready",
   statusError: "Error — you can generate again",
   errorCoach: "Enter the coach name before generating.",
+  errorCredits:
+    "OpenAI credits ran out. Add billing at platform.openai.com → Billing, then generate again.",
   errorQuota:
     "Browser storage was full. We freed it: generate the session again.",
   errorTimeout: "If the brief is very long, shorten it and try again.",

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { reviseRoutineText } from "@/lib/openai";
 import type { Routine } from "@/lib/types";
+import { openaiPublicMessage, openaiRouteStatus } from "@/lib/openaiError";
 
 export const maxDuration = 120;
 
@@ -40,10 +41,8 @@ export async function POST(req: Request) {
       imageRegenIds: result.imageRegenIds,
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Error al aplicar los cambios.";
-    const status = message.includes("OPENAI_API_KEY") ? 503 : 502;
+    const message = openaiPublicMessage(err, "Error al aplicar los cambios.");
     console.error("[api/revise]", err);
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: openaiRouteStatus(err) });
   }
 }

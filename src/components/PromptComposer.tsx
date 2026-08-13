@@ -14,6 +14,7 @@ import {
 } from "@/lib/briefForm";
 import { fetchJson } from "@/lib/http";
 import { tx } from "@/lib/i18n";
+import { isOpenAiCreditsError } from "@/lib/openaiError";
 import { recoverStorageQuota } from "@/lib/storage";
 import { useStudioStore } from "@/lib/store";
 import type { Level, Routine } from "@/lib/types";
@@ -127,13 +128,14 @@ export function PromptComposer() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error desconocido";
-      if (message.toLowerCase().includes("quota")) {
+      if (isOpenAiCreditsError(err) || isOpenAiCreditsError(message)) {
+        setError(tx(locale, "errorCredits"));
+      } else if (
+        err instanceof DOMException &&
+        err.name === "QuotaExceededError"
+      ) {
         setError(tx(locale, "errorQuota"));
-        try {
-          localStorage.removeItem("armatus-coach-routines");
-        } catch {
-          /* ignore */
-        }
+        recoverStorageQuota();
       } else {
         setError(
           message.includes("2 minutos")

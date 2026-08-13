@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { regenerateExerciseText } from "@/lib/openai";
 import type { Exercise, Level } from "@/lib/types";
+import { openaiPublicMessage, openaiRouteStatus } from "@/lib/openaiError";
 
 export const maxDuration = 120;
 
@@ -30,10 +31,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ exercise });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Error al regenerar el texto.";
-    const status = message.includes("OPENAI_API_KEY") ? 503 : 502;
+    const message = openaiPublicMessage(err, "Error al regenerar el texto.");
     console.error("[api/regenerate-text]", err);
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: openaiRouteStatus(err) });
   }
 }

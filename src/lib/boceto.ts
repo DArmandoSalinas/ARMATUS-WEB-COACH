@@ -14,6 +14,10 @@ import {
 } from "./bocetoCharacter.server";
 import { buildBocetoImagePrompt } from "./prompts";
 import OpenAI from "openai";
+import {
+  isOpenAiCreditsError,
+  openaiPublicMessage,
+} from "./openaiError";
 
 function openaiClient(): OpenAI | null {
   const key = process.env.OPENAI_API_KEY?.trim();
@@ -203,6 +207,9 @@ Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
         if (url) return url;
       }
     } catch (err) {
+      if (isOpenAiCreditsError(err)) {
+        throw new Error(openaiPublicMessage(err, ""));
+      }
       console.warn(
         "[boceto] Character-reference edit failed, trying generate/fal",
         err,
@@ -223,6 +230,9 @@ Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
         : undefined;
       if (url) return url;
     } catch (err) {
+      if (isOpenAiCreditsError(err)) {
+        throw new Error(openaiPublicMessage(err, ""));
+      }
       console.warn("[boceto] gpt-image generate failed", err);
     }
   }
@@ -254,6 +264,9 @@ Hard forbid: ${brief.forbidEquipment.join(", ") || "wrong implements"}.`,
         return `data:image/png;base64,${buf.toString("base64")}`;
       }
     } catch (err) {
+      if (isOpenAiCreditsError(err)) {
+        throw new Error(openaiPublicMessage(err, ""));
+      }
       console.error("[boceto] dall-e-3 failed", err);
     }
   }

@@ -1,5 +1,6 @@
 import { resolveBocetoPath } from "./bocetoMatch";
 import { fetchJson } from "./http";
+import { isOpenAiCreditsError } from "./openaiError";
 import type { Exercise, Routine } from "./types";
 
 export type BocetoFillProgress = (msg: string) => void;
@@ -86,6 +87,7 @@ export async function fillMissingBocetos(
   }
 
   let completed = 0;
+  let creditsGone = false;
   if (pending.length > 0) {
     onProgress?.(`Generando boceto 0/${pending.length}…`);
     await mapPool(pending.length, 3, async (slot) => {
@@ -93,6 +95,14 @@ export async function fillMissingBocetos(
       const ex = exercises[i];
       const mustRegen = forceAll || forceIds.has(ex.id);
       const skipLibrary = mustRegen && opts?.forceAi === true;
+
+      if (creditsGone) {
+        failedNames.push(ex.name);
+        exercises[i] = mustRegen ? { ...ex, imageDataUrl: undefined } : ex;
+        completed += 1;
+        onProgress?.(`Generando boceto ${completed}/${pending.length}…`);
+        return;
+      }
 
       try {
         const { ok, data } = await fetchJson<{
@@ -120,7 +130,8 @@ export async function fillMissingBocetos(
         }
         exercises[i] = { ...ex, imageDataUrl: data.imageDataUrl };
         opts?.onExercise?.(exercises[i]);
-      } catch {
+      } catch (err) {
+        if (isOpenAiCreditsError(err)) creditsGone = true;
         failedNames.push(ex.name);
         exercises[i] = mustRegen ? { ...ex, imageDataUrl: undefined } : ex;
       } finally {

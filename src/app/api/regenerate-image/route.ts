@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveExerciseBoceto } from "@/lib/boceto";
+import { openaiPublicMessage, openaiRouteStatus } from "@/lib/openaiError";
 
 export const maxDuration = 120;
 
@@ -60,13 +61,8 @@ export async function POST(req: Request) {
       source: result.source,
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Error al regenerar el boceto.";
-    const status =
-      message.includes("OPENAI_API_KEY") || message.includes("FAL_KEY")
-        ? 503
-        : 502;
+    const message = openaiPublicMessage(err, "Error al regenerar el boceto.");
     console.error("[api/regenerate-image]", err);
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: openaiRouteStatus(err) });
   }
 }

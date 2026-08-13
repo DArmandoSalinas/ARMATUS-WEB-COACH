@@ -4,6 +4,7 @@ import { useState } from "react";
 import { fillMissingBocetos } from "@/lib/fillBocetosClient";
 import { fetchJson } from "@/lib/http";
 import { tx, type Locale } from "@/lib/i18n";
+import { isOpenAiCreditsError } from "@/lib/openaiError";
 import { parseChangeIntent, summarizeRevision } from "@/lib/reviseIntent";
 import type { Routine } from "@/lib/types";
 import { useLocale } from "./LocaleToggle";
@@ -200,7 +201,13 @@ export function RevisionPanel({
           : "Cambios aplicados",
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
+      setError(
+        isOpenAiCreditsError(err)
+          ? tx(locale, "errorCredits")
+          : err instanceof Error
+            ? err.message
+            : "Error desconocido",
+      );
       setStatus(null);
     } finally {
       setBusy(false);
