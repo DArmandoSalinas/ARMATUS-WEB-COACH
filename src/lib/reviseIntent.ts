@@ -14,7 +14,21 @@ const BOCETO_RE =
   /\b(bocetos?|im[aá]genes?|dibujos?|sketches?|ilustraci(?:ó|o)n(?:es)?)\b/i;
 
 const CONTENT_RE =
-  /\b(ejercicio|calentamiento|series|reps?|repeticion(?:es)?|dosific|error(?:es)?|beneficio|texto|nombre|cliente|objetivo|nivel|a[ñn]ade|agrega|quita|elimina|cambia|reemplaz|sustitu|intensidad|mancuerna|barra|liga|banda|paso|ejecuci|simplif|m[aá]s corto|m[aá]s directo|jerga|entend)/i;
+  /\b(ejercicio|exercise|calentamiento|series|reps?|repeticion(?:es)?|dosific|error(?:es)?|beneficio|texto|nombre|cliente|objetivo|nivel|a[ñn]ade|agrega|quita|elimina|cambia|reemplaz|sustitu|intensidad|mancuerna|barra|liga|banda|paso|ejecuci|simplif|m[aá]s corto|m[aá]s directo|jerga|entend|variaci[oó]n|alternativa|instead|en vez|explica|recuadro|nota)\b/i;
+
+const SUBS_RE =
+  /variaci[oó]n(?:es)?|alternativa(?:s)?|en vez de|instead of|you can do|puedes hacer|sustitut/i;
+const NOTE_RE =
+  /\b(nota|note|recuadro|explicaci[oó]n extra|explain|caja de nota|extra box|text box)\b/i;
+const ADD_EX_RE =
+  /a[ñn]ade(?:r)? (?:\d+ )?(?:ejercicios?|exercises?)|agrega(?:r)? (?:ejercicios?|exercises?)|\badd (?:an? |more )?(?:exercises?)\b|nuevo(?:s)? ejercicios?|new exercises?|extra exercises?/i;
+
+/** Substitutes / extra boxes — not a longer session. */
+export function isBoxOnlyRequest(prompt: string): boolean {
+  const t = prompt.trim();
+  const asksBox = SUBS_RE.test(t) || NOTE_RE.test(t);
+  return asksBox && !ADD_EX_RE.test(t);
+}
 
 export function parseChangeIntent(prompt: string): ChangeIntent {
   const t = prompt.trim();
@@ -68,6 +82,8 @@ type RoutineLike = {
     intro: string;
     purpose: string;
     benefit: string;
+    variation?: string;
+    note?: string;
     commonMistakes: string[];
     imageDataUrl?: string;
   }[];
@@ -103,6 +119,12 @@ export function summarizeRevision(
     }
     if (p.name !== ex.name) out.push(`${p.name} → ${ex.name}`);
     if (p.dose.setsReps !== ex.dose.setsReps) doseEdits += 1;
+    if ((p.variation || "") !== (ex.variation || "")) {
+      out.push(`Variación: ${ex.name}`);
+    }
+    if ((p.note || "") !== (ex.note || "")) {
+      out.push(`Nota: ${ex.name}`);
+    }
     if (
       p.intro !== ex.intro ||
       p.purpose !== ex.purpose ||

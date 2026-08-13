@@ -194,11 +194,12 @@ Plancha Copenhagen — 3 × 20–30 s/lado`,
 
   reviseTitle: "Pedir cambios",
   reviseLead:
-    "Describe qué quieres ajustar. Aplicamos el pedido sobre esta rutina, sin empezar de cero. Si pides bocetos nuevos, se regeneran de verdad.",
+    "Describe el ajuste. Variaciones = un sustituto por ejercicio (en vez de X, haz Y), no ejercicios nuevos. Si pides una nota, aparece un recuadro en la ficha.",
   revisePh: `Ejemplos:
 • Baja la intensidad a principiante y reduce series
 • Cambia el Single-Leg RDL por bridge unipodal
-• Reescribe los errores comunes del press de pecho
+• Añade variaciones: en vez de cada ejercicio, un sustituto
+• Pon una nota que explique la posición de la cadera
 • Regenera los bocetos del calentamiento
 • Haz los textos más simples para adultos`,
   apply: "Aplicar cambios",
@@ -208,12 +209,24 @@ Plancha Copenhagen — 3 × 20–30 s/lado`,
   shortcutBeginner: "Bajar a principiante",
   shortcutAdult: "Textos para adultos",
   shortcutWarmup: "Bocetos del calentamiento",
+  shortcutVariations: "Variaciones (sustitutos)",
+  shortcutNote: "Nota extra",
   shortcutBeginnerPrompt:
     "Baja toda la rutina a nivel principiante: menos series, RPE más bajo y descansos más holgados. Conserva los ejercicios.",
   shortcutAdultPrompt:
     "Acorta y simplifica los textos para que un adulto los lea sin fatiga: menos jerga, frases cortas, misma precisión biomecánica.",
   shortcutWarmupPrompt:
     "Regenera solo los bocetos de los ejercicios de calentamiento. No cambies el texto ni el bloque principal.",
+  shortcutVariationsPrompt:
+    "Añade VARIACIONES de sustitución, no ejercicios nuevos. Conserva los mismos ejercicios e ids. En CADA uno rellena variation con 1–2 frases: «En vez de [este ejercicio], puedes hacer [alternativa del mismo patrón] — cuándo usarla». No cambies dosis ni bocetos.",
+  shortcutNotePrompt:
+    "Añade una CAJA DE NOTA (campo note) en cada ejercicio con una explicación extra clara para el atleta (qué sentir, qué evitar). No alargues el intro. No añadas ejercicios. No regeneres bocetos.",
+  miniVariation: "Sustituto (en vez de)",
+  miniVariationPh: "Ej. liga en vez de mancuerna",
+  miniNote: "Explicación extra",
+  miniNotePh: "Ej. por qué no adelantar la rodilla",
+  variationLabel: "En vez de esto",
+  noteLabel: "Nota",
 
   up: "Subir",
   down: "Bajar",
@@ -428,11 +441,12 @@ Copenhagen plank — 3 × 20–30 s/side`,
 
   reviseTitle: "Request changes",
   reviseLead:
-    "Describe the adjustment. We apply it on this session, without starting over. If you ask for new sketches, they are actually redrawn.",
+    "Describe the adjustment. Variations = one substitute per exercise (instead of X, do Y), not extra exercises. If you ask for a note, a box appears on the card.",
   revisePh: `Examples:
 • Drop intensity to beginner and reduce sets
 • Swap Single-Leg RDL for a single-leg bridge
-• Rewrite common mistakes on the chest press
+• Add variations: instead of each exercise, a substitute
+• Add a note explaining hip position
 • Regenerate warm-up sketches
 • Make the copy simpler for adults`,
   apply: "Apply changes",
@@ -442,12 +456,24 @@ Copenhagen plank — 3 × 20–30 s/side`,
   shortcutBeginner: "Drop to beginner",
   shortcutAdult: "Copy for adults",
   shortcutWarmup: "Warm-up sketches",
+  shortcutVariations: "Variations (subs)",
+  shortcutNote: "Extra note",
   shortcutBeginnerPrompt:
     "Drop the whole session to beginner: fewer sets, lower RPE, longer rest. Keep the exercises.",
   shortcutAdultPrompt:
     "Shorten and simplify the copy so an adult can read it without fatigue: less jargon, shorter sentences, same biomechanics precision.",
   shortcutWarmupPrompt:
     "Regenerate only the warm-up sketches. Do not change the copy or the main block.",
+  shortcutVariationsPrompt:
+    "Add SUBSTITUTION variations, not extra exercises. Keep the same exercises and ids. On EACH one fill variation with 1–2 sentences: “Instead of [this], you can do [same-pattern alternative] — when to use it”. Do not change doses or sketches.",
+  shortcutNotePrompt:
+    "Add a NOTE BOX (field note) on each exercise with a clear extra explanation for the athlete (what to feel, what to avoid). Do not lengthen the intro. Do not add exercises. Do not regenerate sketches.",
+  miniVariation: "Substitute (instead of)",
+  miniVariationPh: "e.g. band instead of dumbbell",
+  miniNote: "Extra explanation",
+  miniNotePh: "e.g. why not to let the knee drift forward",
+  variationLabel: "Instead you can",
+  noteLabel: "Note",
 
   up: "Up",
   down: "Down",

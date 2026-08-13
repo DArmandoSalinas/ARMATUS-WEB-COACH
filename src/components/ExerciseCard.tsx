@@ -175,17 +175,6 @@ export function ExerciseCard({
               {exercise.nameEn ? <em>({exercise.nameEn})</em> : null}
             </h2>
           )}
-
-          {editable ? (
-            <textarea
-              className="field-edit exercise__intro"
-              rows={3}
-              value={exercise.intro}
-              onChange={(e) => onChange?.({ intro: e.target.value })}
-            />
-          ) : (
-            <p className="exercise__intro">{exercise.intro}</p>
-          )}
         </div>
 
         <div className="dose">
@@ -239,6 +228,55 @@ export function ExerciseCard({
           )}
         </div>
       </div>
+
+      {editable ? (
+        <textarea
+          className="field-edit exercise__intro"
+          rows={3}
+          value={exercise.intro}
+          onChange={(e) => onChange?.({ intro: e.target.value })}
+        />
+      ) : (
+        <p className="exercise__intro">{exercise.intro}</p>
+      )}
+
+      {editable || exercise.variation ? (
+        <div className="ex-callout ex-callout--variation">
+          <h3 className="ex-callout__title">{tx(locale, "variationLabel")}</h3>
+          {editable ? (
+            <textarea
+              className="field-edit"
+              rows={2}
+              value={exercise.variation ?? ""}
+              placeholder={tx(locale, "miniVariationPh")}
+              onChange={(e) =>
+                onChange?.({ variation: e.target.value || undefined })
+              }
+            />
+          ) : (
+            <p>{exercise.variation}</p>
+          )}
+        </div>
+      ) : null}
+
+      {editable || exercise.note ? (
+        <div className="ex-callout ex-callout--note">
+          <h3 className="ex-callout__title">{tx(locale, "noteLabel")}</h3>
+          {editable ? (
+            <textarea
+              className="field-edit"
+              rows={3}
+              value={exercise.note ?? ""}
+              placeholder={tx(locale, "miniNotePh")}
+              onChange={(e) =>
+                onChange?.({ note: e.target.value || undefined })
+              }
+            />
+          ) : (
+            <p>{exercise.note}</p>
+          )}
+        </div>
+      ) : null}
 
       <figure className="sketch">
         {exercise.imageDataUrl ? (

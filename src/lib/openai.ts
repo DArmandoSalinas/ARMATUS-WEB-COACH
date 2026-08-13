@@ -14,7 +14,7 @@ import {
   extractYoutubeUrls,
   normalizeSupportLinks,
 } from "./supportLinks";
-import { equipmentKind } from "./reviseIntent";
+import { equipmentKind, isBoxOnlyRequest } from "./reviseIntent";
 
 function requireClient(): OpenAI {
   const key = process.env.OPENAI_API_KEY?.trim();
@@ -49,6 +49,8 @@ type RawExercise = {
   commonMistakes?: string[];
   benefit?: string;
   sketchCaption?: string;
+  variation?: string | null;
+  note?: string | null;
   supportLinks?: { label?: string | null; url?: string }[];
 };
 
@@ -82,6 +84,8 @@ function normalizeExercise(raw: RawExercise, order: number): Exercise {
       : [],
     benefit: raw.benefit?.trim() || "",
     sketchCaption: raw.sketchCaption?.trim() || "Vista técnica",
+    variation: raw.variation?.trim() || undefined,
+    note: raw.note?.trim() || undefined,
     supportLinks: normalizeSupportLinks(raw.supportLinks),
   };
 }
@@ -177,6 +181,8 @@ function leanExerciseForPrompt(ex: Exercise) {
     commonMistakes: ex.commonMistakes,
     benefit: ex.benefit,
     sketchCaption: ex.sketchCaption,
+    variation: ex.variation ?? null,
+    note: ex.note ?? null,
     supportLinks: ex.supportLinks ?? [],
   };
 }
@@ -229,6 +235,8 @@ function coachingFingerprint(routine: {
       commonMistakes: ex.commonMistakes,
       benefit: ex.benefit.trim(),
       sketchCaption: ex.sketchCaption.trim(),
+      variation: (ex.variation ?? "").trim(),
+      note: (ex.note ?? "").trim(),
     })),
   });
 }
@@ -298,9 +306,22 @@ function applyParsedRevise(
   parsed: ParsedRevise,
 ): ReviseResult {
   const byId = new Map(routine.exercises.map((ex) => [ex.id, ex]));
-  const rawList = parsed.exercises ?? [];
+  let rawList = parsed.exercises ?? [];
   if (rawList.length === 0) {
     throw new Error("La revisión no devolvió ejercicios.");
+  }
+
+  const boxOnly = isBoxOnlyRequest(changePrompt);
+  if (boxOnly) {
+    const parsedById = new Map(
+      rawList
+        .filter((raw) => typeof raw.id === "string" && raw.id)
+        .map((raw) => [raw.id as string, raw]),
+    );
+    rawList = routine.exercises.map((ex, i) => {
+      const src = parsedById.get(ex.id) ?? rawList[i] ?? {};
+      return { ...src, id: ex.id, needsNewImage: false };
+    });
   }
 
   const imageRegenIds: string[] = [];
@@ -319,14 +340,13 @@ function applyParsedRevise(
       !!prev &&
       equipmentKind(exerciseEquipmentBlob(prev)) !==
         equipmentKind(exerciseEquipmentBlob(base));
-    // Images are stripped before this call — never treat missing imageDataUrl
-    // as a reason to regen (the client reuses by id unless we flag it).
     const needsImage =
-      !prev ||
-      truthyFlag(raw.needsNewImage) ||
-      nameChanged ||
-      captionChanged ||
-      gearChanged;
+      !boxOnly &&
+      (!prev ||
+        truthyFlag(raw.needsNewImage) ||
+        nameChanged ||
+        captionChanged ||
+        gearChanged);
 
     if (needsImage) imageRegenIds.push(keepId);
 
@@ -334,6 +354,8 @@ function applyParsedRevise(
       ...base,
       id: keepId,
       order: i,
+      variation: base.variation || prev?.variation,
+      note: base.note || prev?.note,
       imageDataUrl: needsImage ? undefined : prev?.imageDataUrl,
       supportLinks: base.supportLinks?.length
         ? base.supportLinks
@@ -443,6 +465,8 @@ export async function regenerateExerciseText(params: {
             commonMistakes: exercise.commonMistakes,
             benefit: exercise.benefit,
             sketchCaption: exercise.sketchCaption,
+            variation: exercise.variation ?? null,
+            note: exercise.note ?? null,
             supportLinks: exercise.supportLinks ?? [],
           },
         }),
@@ -460,6 +484,8 @@ export async function regenerateExerciseText(params: {
     id: exercise.id,
     order: exercise.order,
     imageDataUrl: exercise.imageDataUrl,
+    variation: next.variation || exercise.variation,
+    note: next.note || exercise.note,
     supportLinks:
       next.supportLinks?.length
         ? next.supportLinks

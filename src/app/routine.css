@@ -321,8 +321,8 @@
 .routine-page .exercise__head {
   display: grid;
   gap: 18px;
-  margin-bottom: 22px;
-  padding-bottom: 22px;
+  margin-bottom: 14px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
   grid-template-columns: 1fr;
 }
@@ -350,8 +350,9 @@
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  line-height: 1;
-  margin: 10px 0 12px;
+  line-height: 1.05;
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
 }
 
 .routine-page .exercise__title em {
@@ -363,7 +364,7 @@
   color: var(--text-secondary);
   max-width: 100%;
   font-size: 0.98rem;
-  margin: 0;
+  margin: 0 0 16px;
 }
 
 .routine-page .dose {
@@ -405,6 +406,7 @@
 
 .routine-page .sketch {
   position: relative;
+  width: min(100%, 56rem);
   margin: 0 0 18px;
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -416,7 +418,6 @@
 .routine-page .sketch img {
   width: 100%;
   height: auto;
-  max-height: 56vh;
   aspect-ratio: 3 / 2;
   object-fit: contain;
   object-position: center;
@@ -429,8 +430,9 @@
   position: absolute;
   left: 12px;
   bottom: 12px;
+  max-width: calc(100% - 24px);
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(0, 0, 0, 0.72);
   border: 1px solid rgba(255, 107, 53, 0.35);
   color: var(--primary-soft);
@@ -438,6 +440,8 @@
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  white-space: normal;
+  line-height: 1.35;
   backdrop-filter: blur(8px);
 }
 
@@ -978,7 +982,8 @@ html[data-theme="clara"] .routine-page,
 }
 
 .routine-page.pdf-exporting .sketch img {
-  max-height: 420px;
+  max-height: none;
   width: 100%;
+  aspect-ratio: 3 / 2;
   object-fit: contain;
 }

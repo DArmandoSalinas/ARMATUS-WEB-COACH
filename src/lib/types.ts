@@ -30,6 +30,10 @@ export type Exercise = {
   commonMistakes: string[];
   benefit: string;
   sketchCaption: string;
+  /** Substitute: "instead of this, you can do that" — not a new exercise */
+  variation?: string;
+  /** Extra explanation box when the coach asks for one */
+  note?: string;
   /** data URL from OpenAI, or public path for seed assets */
   imageDataUrl?: string;
   /** Videos / búsqueda de técnica (YouTube) */

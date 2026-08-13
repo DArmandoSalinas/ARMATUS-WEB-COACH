@@ -16,8 +16,10 @@ Reglas de contenido:
 - Sin emojis. Sin marketing genérico. Sin relleno.
 - Dosificación realista según nivel (principiante / intermedio / avanzado).
 - duration y frequency: SOLO si el prompt del coach los indica con claridad. Si no, usa null (NO inventes "~45 min" ni "2× por semana").
-- Cada ejercicio necesita: badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
+- Cada ejercicio necesita: badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks, variation (null si no aplica), note (null si no aplica).
 - intro / purpose / benefit: un poco más largos y específicos (2–4 frases) con biomecánica real — se usan también para generar el boceto. Menciona SIEMPRE el equipo exacto (mancuernas / barra / liga elástica / peso corporal).
+- VARIACIONES ≠ ejercicios extra. Si el coach pide variaciones / alternativas / "en vez de": NO añadas ejercicios. Conserva el mismo número. Rellena "variation" con 1–2 frases: "En vez de [este], puedes hacer [sustituto del mismo patrón] — cuándo".
+- NOTA / EXPLICACIÓN EXTRA: si el coach pide un recuadro, una nota, o que algo se explique en el ejercicio, rellena "note". No lo metas en intro. Si no lo pide, note = null.
 - sketchCaption: 1–2 frases EN ESPAÑOL con UNA sola variación (si el nombre dice "A o B", elige A): equipo exacto, pose, ángulo, músculos a resaltar y qué NO dibujar (ej. "press en banco plano con DOS mancuernas; NO barra olímpica"). Sin la palabra "Boceto".
 
 ESTRUCTURA / CALENTAMIENTO (crítico — no colapses listas):
@@ -61,6 +63,8 @@ Responde SOLO con JSON válido (sin markdown) con esta forma exacta:
       "commonMistakes": string[],
       "benefit": string,
       "sketchCaption": string,
+      "variation": string | null,
+      "note": string | null,
       "supportLinks": [{ "label": string | null, "url": string }]
     }
   ]
@@ -77,13 +81,16 @@ Reglas:
 - Aplica TODO lo que pide el coach. Conserva lo que NO menciona (tono, ids, calidad).
 - Si pide cambiar una sección concreta (errores comunes, beneficio, dosificación, pasos, intro), REESCRIBE esa sección. No la copies igual.
 - Si pide textos más simples / para adultos / más claros: acorta frases, menos jerga, misma precisión.
-- Puedes editar, reordenar, añadir o quitar ejercicios según el pedido.
+- Puedes editar, reordenar, añadir o quitar ejercicios SOLO si el coach lo pide con claridad (añade X, quita Y, cambia el bloque).
+- VARIACIONES / ALTERNATIVAS / "en vez de" / "instead of": NO añadas ejercicios. Conserva ids y el mismo número. Rellena "variation" en cada ejercicio pedido (o en todos si dice "cada ejercicio") con 1–2 frases: "En vez de [este], puedes hacer [sustituto del mismo patrón] — cuándo/por qué". needsNewImage = false salvo que también pidan redibujar.
+- NOTA / EXPLICACIÓN / RECUADRO: rellena "note" en el/los ejercicios. No alargues intro. No añadas ejercicios. needsNewImage = false.
 - Si pide expandir calentamiento o separar sub-movimientos, crea ejercicios separados (badge "Calentamiento · NN").
 - Rotación de hombro en calentamiento = liga/banda elástica de pie salvo indicación contraria; marca needsNewImage si el boceto/equipo anterior era mancuerna o barra.
 - Si pide cambios de dosificación, nivel, objetivo o cliente, actualízalos.
 - Mantén el campo "id" de cada ejercicio que conserves (para no regenerar bocetos innecesarios).
 - Ejercicios NUEVOS: id = null.
-- Cada ejercicio necesita: id, name, nameEn, badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
+- Cada ejercicio necesita: id, name, nameEn, badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, variation, note, supportLinks.
+- Conserva variation/note existentes salvo que el pedido los cambie o los pida por primera vez.
 - sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y restricciones visuales (ej. "DOS mancuernas; NO barra").
 - Conserva supportLinks existentes salvo que el pedido los cambie; para ejercicios nuevos aplica las mismas reglas de YouTube (URLs del prompt o search_query; nunca inventes watch?v=).
 - Marca "needsNewImage": true si: el ejercicio es nuevo; cambió el equipo (barra ≠ mancuernas ≠ liga); cambió la pose; O el coach pide regenerar/corregir bocetos, imágenes o dibujos. En esos casos actualiza sketchCaption para que el ilustrador dibuje lo correcto.
@@ -111,6 +118,8 @@ Responde SOLO JSON válido:
       "commonMistakes": string[],
       "benefit": string,
       "sketchCaption": string,
+      "variation": string | null,
+      "note": string | null,
       "supportLinks": [{ "label": string | null, "url": string }]
     }
   ]
@@ -123,7 +132,7 @@ intro/purpose/benefit un poco más específicos y deben nombrar el equipo exacto
 sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y qué NO dibujar (ej. "liga elástica de pie; NO mancuerna").
 Si es rotación de hombro de calentamiento sin otro equipo indicado → liga/banda elástica de pie.
 
-Conserva o regenera supportLinks (YouTube del contexto o search_query; nunca inventes watch?v=).
+Conserva variation/note si ya existen. Conserva o regenera supportLinks (YouTube del contexto o search_query; nunca inventes watch?v=).
 Sin emojis. Responde SOLO JSON válido:
 {
   "name": string,
@@ -137,6 +146,8 @@ Sin emojis. Responde SOLO JSON válido:
   "commonMistakes": string[],
   "benefit": string,
   "sketchCaption": string,
+  "variation": string | null,
+  "note": string | null,
   "supportLinks": [{ "label": string | null, "url": string }]
 }`;
 
@@ -205,7 +216,7 @@ export function withOutputLanguage(system: string, locale: "es" | "en"): string 
   if (locale === "en") {
     return `${system}
 
-OUTPUT LANGUAGE LOCK: Write ALL coaching fields in English (intro, purpose, steps, commonMistakes, benefit, sketchCaption, badges, notes). Exercise "name" in English; put the Spanish name in nameEn only if the coach used Spanish. Badges: "Warm-up · 01", "Main block · 01". Keep JSON keys unchanged. Level values stay principiante | intermedio | avanzado.`;
+OUTPUT LANGUAGE LOCK: Write ALL coaching fields in English (intro, purpose, steps, commonMistakes, benefit, sketchCaption, variation, note, badges, notes). Exercise "name" in English; put the Spanish name in nameEn only if the coach used Spanish. Badges: "Warm-up · 01", "Main block · 01". Keep JSON keys unchanged. Level values stay principiante | intermedio | avanzado.`;
   }
   return `${system}
 

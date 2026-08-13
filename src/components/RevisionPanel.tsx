@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { fillMissingBocetos } from "@/lib/fillBocetosClient";
 import { fetchJson } from "@/lib/http";
-import { tx } from "@/lib/i18n";
+import { tx, type Locale } from "@/lib/i18n";
 import { parseChangeIntent, summarizeRevision } from "@/lib/reviseIntent";
 import type { Routine } from "@/lib/types";
 import { useLocale } from "./LocaleToggle";
@@ -13,6 +13,31 @@ type RevisionPanelProps = {
   onRevised: (routine: Routine) => void | Promise<void>;
   onClaraView?: () => void;
 };
+
+function composeChangePrompt(
+  locale: Locale,
+  prompt: string,
+  variationHint: string,
+  noteHint: string,
+): string {
+  const parts: string[] = [];
+  if (prompt.trim()) parts.push(prompt.trim());
+  if (variationHint.trim()) {
+    parts.push(
+      locale === "en"
+        ? `VARIATIONS (mandatory): Do NOT add exercises. Keep the same ids and count. Fill "variation" on EVERY exercise with one substitute: "Instead of [this], you can do [that] — when/why." Extra constraint: ${variationHint.trim()}`
+        : `VARIACIONES (obligatorio): NO añadas ejercicios. Conserva los mismos ids y el mismo número. Rellena "variation" en CADA ejercicio: "En vez de [esto], puedes hacer [eso] — cuándo/por qué." Extra: ${variationHint.trim()}`,
+    );
+  }
+  if (noteHint.trim()) {
+    parts.push(
+      locale === "en"
+        ? `EXTRA BOX (mandatory): Fill "note" on the relevant exercise(s) with this explanation. Do not dump it into intro. Text: ${noteHint.trim()}`
+        : `CAJA EXTRA (obligatorio): Rellena "note" en el/los ejercicios con esta explicación. No la metas en intro. Texto: ${noteHint.trim()}`,
+    );
+  }
+  return parts.join("\n\n");
+}
 
 export function RevisionPanel({
   routine,
@@ -33,16 +58,31 @@ export function RevisionPanel({
       label: tx(locale, "shortcutWarmup"),
       prompt: tx(locale, "shortcutWarmupPrompt"),
     },
+    {
+      label: tx(locale, "shortcutVariations"),
+      prompt: tx(locale, "shortcutVariationsPrompt"),
+    },
+    {
+      label: tx(locale, "shortcutNote"),
+      prompt: tx(locale, "shortcutNotePrompt"),
+    },
   ];
   const [prompt, setPrompt] = useState("");
+  const [variationHint, setVariationHint] = useState("");
+  const [noteHint, setNoteHint] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [diff, setDiff] = useState<string[]>([]);
 
   async function handleRevise() {
-    if (!prompt.trim() || busy) return;
-    const changePrompt = prompt.trim();
+    const changePrompt = composeChangePrompt(
+      locale,
+      prompt,
+      variationHint,
+      noteHint,
+    );
+    if (!changePrompt || busy) return;
     const intent = parseChangeIntent(changePrompt);
 
     setBusy(true);
@@ -60,6 +100,8 @@ export function RevisionPanel({
           "Listo: activé la apariencia clara (blanco y naranja). El PDF usa el mismo modo.",
         );
         setPrompt("");
+        setVariationHint("");
+        setNoteHint("");
         return;
       }
 
@@ -132,6 +174,8 @@ export function RevisionPanel({
         setDiff(summary);
         await onRevised(next);
         setPrompt("");
+        setVariationHint("");
+        setNoteHint("");
         if (failedNames.length > 0) {
           setStatus(
             `Cambios aplicados. ${failedNames.length} boceto(s) pendiente(s) — pulsa Reintentar boceto en el ejercicio.`,
@@ -148,6 +192,8 @@ export function RevisionPanel({
       setDiff(summary);
       await onRevised(next);
       setPrompt("");
+      setVariationHint("");
+      setNoteHint("");
       setStatus(
         intent.wantsClaraView
           ? "Cambios aplicados. Versión clara activada."
@@ -186,6 +232,26 @@ export function RevisionPanel({
           </button>
         ))}
       </div>
+      <div className="revise-minis">
+        <label className="revise-mini">
+          <span>{tx(locale, "miniVariation")}</span>
+          <input
+            value={variationHint}
+            disabled={busy}
+            placeholder={tx(locale, "miniVariationPh")}
+            onChange={(e) => setVariationHint(e.target.value)}
+          />
+        </label>
+        <label className="revise-mini">
+          <span>{tx(locale, "miniNote")}</span>
+          <input
+            value={noteHint}
+            disabled={busy}
+            placeholder={tx(locale, "miniNotePh")}
+            onChange={(e) => setNoteHint(e.target.value)}
+          />
+        </label>
+      </div>
       <label className="sr-only" htmlFor="revision-prompt">
         {tx(locale, "askChanges")}
       </label>
@@ -211,7 +277,10 @@ export function RevisionPanel({
         <button
           type="button"
           className="btn btn--primary"
-          disabled={busy || !prompt.trim()}
+          disabled={
+            busy ||
+            (!prompt.trim() && !variationHint.trim() && !noteHint.trim())
+          }
           aria-busy={busy || undefined}
           onClick={handleRevise}
         >

@@ -208,10 +208,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   exHead: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 10,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    marginBottom: 8,
   },
   exHeadMain: {
     width: "70%",
@@ -220,19 +217,23 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   exTitle: {
     fontFamily: display,
     fontWeight: displayWeight,
-    fontSize: 22,
-    lineHeight: 1.05,
-    letterSpacing: 0.5,
+    fontSize: 20,
+    lineHeight: 1.12,
+    letterSpacing: 0.4,
     textTransform: up,
-    marginBottom: 5,
   },
   exTitleEm: {
     color: C.orange,
   },
   exIntro: {
+    width: "100%",
     fontSize: 9,
     lineHeight: 1.4,
     color: C.muted,
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
   },
   doseBox: {
     width: "28%",
@@ -257,7 +258,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   doseValue: {
     fontFamily: display,
     fontWeight: 800,
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: 2,
     textAlign: "center",
   },
@@ -268,7 +269,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   sketch: {
     width: "100%",
-    height: 236,
+    height: 354,
     objectFit: "contain",
     backgroundColor: "#050505",
     borderWidth: 1,
@@ -278,12 +279,22 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   sketchCaption: {
     fontSize: 7.5,
-    letterSpacing: 1.4,
+    letterSpacing: 0.6,
     color: C.orangeSoft,
-    textTransform: up,
     marginBottom: 8,
     fontFamily: display,
     fontWeight: 700,
+    textTransform: up,
+  },
+  callout: {
+    width: "100%",
+    flexDirection: "column",
+    backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,53,0.4)",
+    borderRadius: 10,
+    padding: 8,
+    marginBottom: 8,
   },
   sketchMissing: {
     width: "100%",
@@ -736,21 +747,35 @@ function ExercisePage({
       <View style={s.exHead}>
         <View style={s.exHeadMain}>
           <Text style={s.exTitle}>
-            {clip(primary, 72)}
+            {primary}
             {secondary ? (
-              <Text style={s.exTitleEm}>{` (${clip(secondary, 36)})`}</Text>
+              <Text style={s.exTitleEm}>{` (${secondary})`}</Text>
             ) : null}
           </Text>
-          <Text style={s.exIntro}>{clip(exercise.intro, 320)}</Text>
         </View>
         <View style={s.doseBox}>
           <Text style={s.doseLabel}>{tx(locale, "pdfDose")}</Text>
-          <Text style={s.doseValue}>{clip(exercise.dose.setsReps, 28)}</Text>
+          <Text style={s.doseValue}>{exercise.dose.setsReps}</Text>
           {doseMeta ? (
-            <Text style={s.doseMeta}>{clip(doseMeta, 36)}</Text>
+            <Text style={s.doseMeta}>{doseMeta}</Text>
           ) : null}
         </View>
       </View>
+      {exercise.intro ? (
+        <Text style={s.exIntro}>{exercise.intro}</Text>
+      ) : null}
+      {exercise.variation ? (
+        <View style={s.callout}>
+          <Text style={s.blockTitle}>{tx(locale, "variationLabel")}</Text>
+          <Text style={s.blockBody}>{exercise.variation}</Text>
+        </View>
+      ) : null}
+      {exercise.note ? (
+        <View style={s.callout}>
+          <Text style={s.blockTitle}>{tx(locale, "noteLabel")}</Text>
+          <Text style={s.blockBody}>{exercise.note}</Text>
+        </View>
+      ) : null}
 
       {img ? (
         <View>
@@ -762,7 +787,7 @@ function ExercisePage({
             cache={false}
           />
           <Text style={s.sketchCaption}>
-            {tx(locale, "pdfSketch")} · {clip(exercise.sketchCaption, 96)}
+            {tx(locale, "pdfSketch")} · {exercise.sketchCaption}
           </Text>
         </View>
       ) : (
@@ -774,7 +799,7 @@ function ExercisePage({
       <View style={s.row}>
         <View style={[s.block, s.colLeft]}>
           <Text style={s.blockTitle}>{tx(locale, "purpose")}</Text>
-          <Text style={s.blockBody}>{clip(exercise.purpose, 280)}</Text>
+          <Text style={s.blockBody}>{clip(exercise.purpose, 420)}</Text>
         </View>
         <View style={[s.block, s.colRight]}>
           <Text style={s.blockTitle}>{tx(locale, "muscles")}</Text>
@@ -816,7 +841,7 @@ function ExercisePage({
         </View>
         <View style={[s.benefit, s.colRight]}>
           <Text style={s.benefitTitle}>{tx(locale, "benefit")}</Text>
-          <Text style={s.blockBody}>{clip(exercise.benefit, 220)}</Text>
+          <Text style={s.blockBody}>{clip(exercise.benefit, 320)}</Text>
         </View>
       </View>
 
