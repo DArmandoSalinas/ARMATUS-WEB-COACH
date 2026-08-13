@@ -38,15 +38,17 @@ export function exampleBrief(locale: Locale): BriefFields {
       equipment: "Barbell, dumbbells, bodyweight",
       duration: "~45 min",
       frequency: "2× per week",
-      warmup: "",
-      main: `Back squat
-Single-leg RDL
-Bulgarian split squat + step-up with knee drive
-Copenhagen plank
-Ankle complex (seated soleus + tibialis anterior)`,
+      warmup: `90/90 hip switch — 2 × 6/side
+World’s greatest stretch — 2 × 5/side
+Glute bridge — 2 × 10`,
+      main: `Back squat — 4 × 6
+Single-leg RDL — 3 × 8/side  https://www.youtube.com/watch?v=2C-uNgKwP6o
+Bulgarian split squat + step-up with knee drive — 3 × 8/side
+Copenhagen plank — 3 × 20–30 s/side
+Ankle complex (seated soleus + tibialis anterior) — 2 × 12`,
       constraints: "",
       notes:
-        "Professional biomechanics explanation, common mistakes, and a running-specific benefit. Include technical sketches.",
+        "Short copy for an adult. Explain biomechanics and a running-specific benefit. Concrete mistakes. Include technical sketches.",
       freeBrief: "",
     };
   }
@@ -57,15 +59,17 @@ Ankle complex (seated soleus + tibialis anterior)`,
     equipment: "Barra, mancuernas, peso corporal",
     duration: "~45 min",
     frequency: "2× por semana",
-    warmup: "",
-    main: `Sentadilla libre (Back Squat)
-Single-Leg RDL
-Sentadilla búlgara + Step-up con knee drive
-Plancha Copenhagen
-Complejo de tobillo (sóleo sentado + tibial anterior)`,
+    warmup: `90/90 hip switch — 2 × 6/lado
+World’s greatest stretch — 2 × 5/lado
+Glute bridge — 2 × 10`,
+    main: `Sentadilla libre (Back Squat) — 4 × 6
+Single-Leg RDL — 3 × 8/lado  https://www.youtube.com/watch?v=2C-uNgKwP6o
+Sentadilla búlgara + Step-up con knee drive — 3 × 8/lado
+Plancha Copenhagen — 3 × 20–30 s/lado
+Complejo de tobillo (sóleo sentado + tibial anterior) — 2 × 12`,
     constraints: "",
     notes:
-      "Explicación biomecánica profesional, errores comunes y beneficio específico para running. Incluir bocetos técnicos.",
+      "Textos cortos para un adulto. Explica biomecánica y el beneficio para running. Errores concretos. Incluir bocetos técnicos.",
     freeBrief: "",
   };
 }
@@ -99,15 +103,33 @@ export function buildRoutineBrief(fields: BriefFields, locale: Locale): string {
   if (fields.warmup.trim()) {
     lines.push("");
     lines.push(en ? "WARM-UP:" : "CALENTAMIENTO:");
+    lines.push(
+      en
+        ? "(YouTube: paste the URL on the same line as that exercise.)"
+        : "(YouTube: pega el URL en la misma línea de ese ejercicio.)",
+    );
     lines.push(fields.warmup.trim());
   }
   if (fields.main.trim()) {
     lines.push("");
     lines.push(en ? "MAIN BLOCK:" : "BLOQUE PRINCIPAL:");
+    lines.push(
+      en
+        ? "(YouTube: paste the URL on the same line as that exercise.)"
+        : "(YouTube: pega el URL en la misma línea de ese ejercicio.)",
+    );
     lines.push(fields.main.trim());
   }
   row(en ? "Injuries / constraints" : "Lesiones / restricciones", fields.constraints);
-  row(en ? "Notes" : "Notas", fields.notes);
+  if (fields.notes.trim()) {
+    lines.push("");
+    lines.push(
+      en
+        ? "COPY INSTRUCTIONS (tone and what to explain — videos belong on the exercise line, not here):"
+        : "INSTRUCCIONES PARA EL TEXTO (tono y qué explicar; los videos van en la línea del ejercicio, no aquí):",
+    );
+    lines.push(fields.notes.trim());
+  }
 
   if (fields.freeBrief.trim()) {
     lines.push("");

@@ -56,15 +56,51 @@ function hasBand(t: string): boolean {
   return /\b(banda|band|liga|ligas|theraband|elastic[oa]?s?)\b/i.test(t);
 }
 
+/** Floor drills that must never reuse a standing/pulling library JPG. */
+const FLOOR_MOBILITY_RE =
+  /\b(90\s*[/\-]\s*90|hip\s*switch|cambio\s+de\s+cadera|shin\s*box|world'?s?\s*greatest|pigeon|paloma|cat[\s-]?cow|gato\s*vaca|hip\s*airplane|90\s*90)\b/i;
+
+export function isFloorMobilityText(text: string): boolean {
+  return FLOOR_MOBILITY_RE.test(text);
+}
+
+function isHipContext(text: string): boolean {
+  return (
+    isFloorMobilityText(text) ||
+    /\b(cadera|hips?|gl[uú]teo|glute)\b/i.test(text)
+  );
+}
+
 function detectEquipment(text: string): {
   equipment: string;
   forbid: string[];
 } {
   const t = text;
 
+  if (isFloorMobilityText(t)) {
+    return {
+      equipment:
+        "NONE — bodyweight on the floor. Seated or kneeling as the drill requires. No handles, cables, bands, or weights unless the TITLE names them.",
+      forbid: [
+        "cable",
+        "polea",
+        "D-handle",
+        "row",
+        "remo",
+        "pulling a handle",
+        "dumbbell",
+        "barbell",
+        "standing cable row",
+        "shoulder band rotation",
+      ],
+    };
+  }
+
   // --- Shoulder IR / ER (warm-up default = resistance band) ---
+  // Hip rotation (90/90, cadera) is NOT this pattern.
   if (
-    /\b(rotaci[oó]n\s+(externa|interna)|external\s*rotation|internal\s*rotation|rotator\s*cuff|manguito\s+rotador)\b/i.test(
+    !isHipContext(t) &&
+    /\b(rotaci[oó]n\s+(externa|interna)|external\s*rotation|internal\s*rotation|rotator\s*cuff|manguito\s+rotador|hombro|shoulder)\b/i.test(
       t,
     )
   ) {
@@ -310,7 +346,11 @@ function detectLaterality(text: string): VisualBrief["laterality"] {
 }
 
 function detectBodyPosition(text: string): string {
+  if (isFloorMobilityText(text)) {
+    return "seated on the floor, both knees and hips at ~90°, torso upright — NOT standing, NOT pulling";
+  }
   if (
+    !isHipContext(text) &&
     /\b(rotaci[oó]n\s+(externa|interna)|external\s*rotation|internal\s*rotation)\b/i.test(
       text,
     ) &&
@@ -356,6 +396,19 @@ export function shouldExcludeBarbellReferences(brief: VisualBrief): boolean {
     e.includes("mancuerna") ||
     e.includes("band") ||
     e.includes("liga") ||
-    brief.forbidEquipment.some((f) => /barbell|olympic/i.test(f))
+    e.includes("floor") ||
+    e.includes("suelo") ||
+    brief.forbidEquipment.some((f) => /barbell|olympic|cable|row/i.test(f))
+  );
+}
+
+/** Floor drills: do not use hanging-pull / bench refs (they become fake rows). */
+export function shouldUseFloorCharacterReferences(brief: VisualBrief): boolean {
+  const e = `${brief.primaryVariation} ${brief.equipment} ${brief.bodyPosition}`.toLowerCase();
+  return (
+    isFloorMobilityText(e) ||
+    e.includes("floor") ||
+    e.includes("suelo") ||
+    e.includes("seated on the floor")
   );
 }

@@ -177,7 +177,6 @@ const RULES: BocetoRule[] = [
     key: 'jerk',
     patterns: [
       /\b(?:push|split|power)\s*jerk\b/i,
-      /\bjerk\b/i,
       /\benvi[oó]n\b/i,
       /\bclean\s*(and|&)\s*jerk\b/i,
     ],
@@ -203,7 +202,6 @@ const RULES: BocetoRule[] = [
     patterns: [
       /\bmountain\s*climbers?\b/i,
       /\bescaladores?\b/i,
-      /\bclimbers?\b/i,
     ],
   },
   {
@@ -274,6 +272,29 @@ const RULES: BocetoRule[] = [
     ],
   },
   {
+    // Named floor drills. Generic mobility.jpg is a different stretch —
+    // never reuse it for 90/90, hip switch, pigeon, etc. → AI.
+    key: 'mobility',
+    strength: 'weak',
+    patterns: [
+      /\b90\s*[/\-]\s*90\b/i,
+      /\b90\s*90\b/i,
+      /\bhip\s*switch\b/i,
+      /\bcambio\s+de\s+cadera\b/i,
+      /\bshin\s*box\b/i,
+      /\bhip\s*airplane\b/i,
+      /\bworld'?s?\s*greatest\s*stretch\b/i,
+      /\bpigeon\b/i,
+      /\bpaloma\b/i,
+      /\bcat[\s-]?cow\b/i,
+      /\bgato\s*vaca\b/i,
+      /\bcouch\s*stretch\b/i,
+      /\bthread\s*the\s*needle\b/i,
+      /\binchworm\b/i,
+      /\bmovilidad\s+(de\s+)?cadera\b/i,
+    ],
+  },
+  {
     key: 'mobility',
     patterns: [
       /\bmobility\b/i,
@@ -281,22 +302,12 @@ const RULES: BocetoRule[] = [
       /\bstretch(?:ing|es)?\b/i,
       /\bestiramiento\b/i,
       /\bfoam\s*roll/i,
-      /\bcat[\s-]?cow\b/i,
-      /\bpigeon\b/i,
-      /\bcouch\s*stretch\b/i,
-      /\b90\s*\/\s*90\b/i,
-      /\bhip\s*airplane\b/i,
-      /\bworld'?s?\s*greatest\s*stretch\b/i,
       /\bankle\s*mobility\b/i,
-      /\bmovilidad\s+(de\s+)?cadera\b/i,
       /\bwrist\s*mobility\b/i,
       /\bbreath(?:ing)?\s*(drill|work|box)?\b/i,
       /\bbox\s*breathing\b/i,
       /\bnasal\s*breathing\b/i,
       /\brespiraci[oó]n\b/i,
-      /\binchworm\b/i,
-      /\bthread\s*the\s*needle\b/i,
-      /\bopeners?\b/i,
     ],
   },
   {
@@ -725,11 +736,9 @@ const RULES: BocetoRule[] = [
       /\bwood\s*chops?\b/i,
       /\bwoodchop/i,
       /\bcable\s*chop\b/i,
-      /\bchop\b/i,
-      /\brotaci[oó]n\s+de\s+tronco\b/i,
       /\ble[ñn]ador\b/i,
       /\brussian\s*twist\b/i,
-      /\bgiratoria\b/i,
+      /\brotaci[oó]n\s+de\s+tronco\b/i,
     ],
   },
   {
@@ -909,7 +918,6 @@ const RULES: BocetoRule[] = [
   },
   {
     // Library art = two-hand barbell bent-over row only.
-    // Single-arm / dumbbell / cable rows → AI (see LIBRARY_ASSET_REJECT).
     key: 'row',
     patterns: [
       /\bpendlay\b/i,
@@ -918,15 +926,15 @@ const RULES: BocetoRule[] = [
       /\bremo\s+con\s+barra\b/i,
       /\bremo\s+barra\b/i,
       /\bremo\s+pentlay\b/i,
-      /\brows?\b/i,
-      /\bremo\b/i,
     ],
   },
   {
-    // Family aliases — never reuse barbell-row art
+    // Bare "row" / "remo" — cable, DB, and mystery names must not steal barbell-row art.
     key: 'row',
     strength: 'weak',
     patterns: [
+      /\brows?\b/i,
+      /\bremo\b/i,
       /\binvertido\b/i,
       /\binverted\s*row\b/i,
       /\baustralian\s*pull/i,
@@ -1252,14 +1260,16 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bpolea\b/i,
     /\bcable\b/i,
   ],
-  // Generic mobility JPG — reject specific named drills (generate AI)
+  // Generic mobility JPG — reject named floor drills and hip rotation copy
   mobility: [
+    /\b90\s*[/\-]\s*90\b/i,
+    /\bhip\s*switch\b/i,
+    /\bcambio\s+de\s+cadera\b/i,
     /\babducci/i,
     /\bdesplante/i,
     /\blunge/i,
     /\bpiernas?\s+de\s+un\s+lado\b/i,
     /\bside[\s-]?to[\s-]?side\b/i,
-    /\brotaci[oó]n\b/i,
   ],
   curl: [/\bm[aá]quina\b/i, /\bcable\b/i, /\bpolea\b/i],
   lateral: [/\bcable\b/i, /\bpolea\b/i, /\bm[aá]quina\b/i],

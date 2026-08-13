@@ -69,7 +69,8 @@ export async function fillMissingBocetos(
 
   let completed = 0;
   if (pending.length > 0) {
-    await mapPool(pending.length, 2, async (slot) => {
+    onProgress?.(`Generando boceto 0/${pending.length}…`);
+    await mapPool(pending.length, 3, async (slot) => {
       const i = pending[slot];
       const ex = exercises[i];
       const mustRegen = forceAll || forceIds.has(ex.id);

@@ -3,10 +3,12 @@ import path from "node:path";
 import { toFile } from "openai";
 import {
   CHARACTER_REFERENCE_FILES,
+  FLOOR_CHARACTER_REFERENCE_FILES,
   SAFE_CHARACTER_REFERENCE_FILES,
 } from "./bocetoCharacter";
 import {
   shouldExcludeBarbellReferences,
+  shouldUseFloorCharacterReferences,
   type VisualBrief,
 } from "./bocetoBrief";
 
@@ -16,10 +18,13 @@ function pathsForFiles(files: readonly string[]): string[] {
 }
 
 export function characterReferencePaths(brief?: VisualBrief): string[] {
-  const files =
-    brief && shouldExcludeBarbellReferences(brief)
-      ? SAFE_CHARACTER_REFERENCE_FILES
-      : CHARACTER_REFERENCE_FILES;
+  const files = !brief
+    ? CHARACTER_REFERENCE_FILES
+    : shouldUseFloorCharacterReferences(brief)
+      ? FLOOR_CHARACTER_REFERENCE_FILES
+      : shouldExcludeBarbellReferences(brief)
+        ? SAFE_CHARACTER_REFERENCE_FILES
+        : CHARACTER_REFERENCE_FILES;
   return pathsForFiles(files);
 }
 

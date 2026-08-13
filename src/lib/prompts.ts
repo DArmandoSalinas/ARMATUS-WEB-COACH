@@ -193,9 +193,10 @@ FORBIDDEN: ${avoid || "any different machine or free-weight type"}
 2) If the title says mancuernas / dumbbells, both hands (or the working hand) hold dumbbells; there must be a visible gap between implements — no connecting shaft.
 3) If the title says liga / banda / band, draw the band path clearly; do not substitute a dumbbell or cable.
 4) Pose must match BODY POSITION + TECHNIQUE STEPS (e.g. standing band ER ≠ side-lying DB ER).
-5) UPPER BODY SHIRTLESS — athletic shorts + sneakers only. Non-sexual, coaching-anatomical.
-6) ACTIVATION GLOW: molten orange (#FF6B35) on working muscle fibers; white for silhouette. Pure black background. Sharp dual-line technical sketch, landscape composition.
-7) ZERO text, letters, numbers, labels, watermarks, or logos.
+5) 90/90 hip switch / cambio de cadera: athlete SITS ON THE FLOOR, both knees bent 90°, switching legs. NEVER standing. NEVER a cable, D-handle, row, or pulling movement.
+6) UPPER BODY SHIRTLESS — athletic shorts + sneakers only. Non-sexual, coaching-anatomical.
+7) ACTIVATION GLOW: molten orange (#FF6B35) on working muscle fibers; white for silhouette. Pure black background. Sharp dual-line technical sketch, landscape composition.
+8) ZERO text, letters, numbers, labels, watermarks, or logos.
 
 Illustrate ONE decisive mid-rep frame of PRIMARY VARIATION with LOCKED EQUIPMENT only, same ARMATUS athlete as references (character only).`;
 }

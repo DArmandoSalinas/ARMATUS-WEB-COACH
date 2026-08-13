@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fillMissingBocetos } from "@/lib/fillBocetosClient";
 import {
   briefIsReady,
   buildRoutineBrief,
@@ -114,31 +113,17 @@ export function PromptComposer() {
       }
 
       const draft = data.routine;
-      const needsBocetos = draft.exercises.some((ex) => !ex.imageDataUrl);
-      let routine = draft;
-      if (needsBocetos) {
-        setStatus(tx(locale, "statusBocetos"));
-        const filled = await fillMissingBocetos(null, draft, setStatus);
-        routine = filled.routine;
-        if (filled.failedNames.length > 0) {
-          setStatus(
-            `${tx(locale, "statusDone")}. ${filled.failedNames.length} ${tx(locale, "statusBocetosFail")}`,
-          );
-        }
-      }
-
-      await setCurrent(routine);
-      setStatus(tx(locale, "statusPublish"));
+      setStatus(tx(locale, "statusOpen"));
+      await setCurrent(draft);
+      skipDraftSave.current = true;
+      clearBriefDraft();
+      router.push(`/rutina/${draft.id}`);
       try {
         const { publishRoutineClient } = await import("@/lib/publishClient");
-        await publishRoutineClient(routine);
+        void publishRoutineClient(draft);
       } catch {
         /* share can retry from the routine page */
       }
-      setStatus(tx(locale, "statusDone"));
-      skipDraftSave.current = true;
-      clearBriefDraft();
-      router.push(`/rutina/${routine.id}`);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error desconocido";
@@ -236,6 +221,12 @@ export function PromptComposer() {
               </button>
             </div>
 
+            <ol className="ficha-guide">
+              <li>{tx(locale, "fichaGuide1")}</li>
+              <li>{tx(locale, "fichaGuide2")}</li>
+              <li>{tx(locale, "fichaGuide3")}</li>
+            </ol>
+
             {mode === "form" ? (
               <div className="brief-grid">
                 <div className="brief-grid--2">
@@ -320,6 +311,7 @@ export function PromptComposer() {
                     placeholder={tx(locale, "warmupPh")}
                     disabled={busy}
                   />
+                  <p className="field-help">{tx(locale, "warmupHelp")}</p>
                 </label>
 
                 <label className="block">
@@ -331,6 +323,7 @@ export function PromptComposer() {
                     placeholder={tx(locale, "mainPh")}
                     disabled={busy}
                   />
+                  <p className="field-help">{tx(locale, "mainHelp")}</p>
                 </label>
 
                 <label className="block">
@@ -344,8 +337,36 @@ export function PromptComposer() {
                   />
                 </label>
 
-                <label className="block">
+                <div className="block">
                   <span className="field-kicker">{tx(locale, "notes")}</span>
+                  <div className="coach-chip-row">
+                    {(
+                      [
+                        ["voiceSimple", "voiceSimpleText"],
+                        ["voiceBio", "voiceBioText"],
+                        ["voiceBenefit", "voiceBenefitText"],
+                      ] as const
+                    ).map(([labelKey, textKey]) => (
+                      <button
+                        key={labelKey}
+                        type="button"
+                        className="coach-chip"
+                        disabled={busy}
+                        onClick={() => {
+                          const line = tx(locale, textKey);
+                          patch({
+                            notes: fields.notes.includes(line)
+                              ? fields.notes
+                              : [fields.notes.trim(), line]
+                                  .filter(Boolean)
+                                  .join("\n"),
+                          });
+                        }}
+                      >
+                        {tx(locale, labelKey)}
+                      </button>
+                    ))}
+                  </div>
                   <textarea
                     className="prompt-surface !min-h-[88px] !rounded-[16px] !p-4"
                     value={fields.notes}
@@ -353,7 +374,8 @@ export function PromptComposer() {
                     placeholder={tx(locale, "notesPh")}
                     disabled={busy}
                   />
-                </label>
+                  <p className="field-help">{tx(locale, "notesHelp")}</p>
+                </div>
               </div>
             ) : (
               <label className="relative block">
@@ -366,6 +388,7 @@ export function PromptComposer() {
                   spellCheck
                   disabled={busy}
                 />
+                <p className="field-help">{tx(locale, "mainHelp")}</p>
               </label>
             )}
 

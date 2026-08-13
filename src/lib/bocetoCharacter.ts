@@ -23,3 +23,6 @@ export const SAFE_CHARACTER_REFERENCE_FILES = [
   "pullup.jpg",
   "pushup.jpg",
 ] as const;
+
+/** Floor / seated-on-ground drills — hanging pull refs become fake cable rows. */
+export const FLOOR_CHARACTER_REFERENCE_FILES = ["pushup.jpg"] as const;

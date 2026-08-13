@@ -71,7 +71,7 @@ const es = {
   composerTitle: "Llena la ficha.",
   composerAccent: "Nosotros la forjamos.",
   composerLead:
-    "Los campos obligatorios evitan briefs vacíos. La ficha se guarda sola en este navegador. Si ya traes el texto (WhatsApp, nota), usa Brief libre. El progreso es real: primero el texto, después los bocetos.",
+    "Lista los ejercicios. El video de YouTube va en la misma línea del ejercicio. En Instrucciones dile a la IA cómo escribir el texto que verá el atleta.",
   coach: "Coach",
   coachPh: "Nombre del coach",
   modeForm: "Ficha",
@@ -91,16 +91,40 @@ const es = {
   frequency: "Frecuencia",
   frequencyPh: "Ej. 2× por semana",
   warmup: "Calentamiento",
-  warmupPh: "Un movimiento por línea. Incluye equipo y dosis si las tienes.",
+  warmupPh: `90/90 hip switch — 2 × 6/lado
+World’s greatest stretch — 2 × 5/lado`,
+  warmupHelp:
+    "Un movimiento por línea, con series si las tienes. Video: pégalo al final de esa misma línea.",
   mainBlock: "Bloque principal",
-  mainPh: "Un ejercicio por línea, con series × reps si las tienes.",
+  mainPh: `Sentadilla libre — 4 × 6 @ RPE 7
+Single-Leg RDL — 3 × 8/lado  https://www.youtube.com/watch?v=2C-uNgKwP6o
+Plancha Copenhagen — 3 × 20–30 s/lado`,
+  mainHelp:
+    "Un ejercicio por línea. El link de YouTube va aquí, junto al nombre — no en Instrucciones. Así queda en esa tarjeta.",
   constraints: "Lesiones o restricciones",
   constraintsPh: "Hombro sensible, no axial load, evitar flexión lumbar…",
-  notes: "Notas y videos",
-  notesPh: "Indicaciones extra o URLs de YouTube pegadas junto al ejercicio.",
+  notes: "Instrucciones para el texto",
+  notesPh:
+    "Textos cortos para un adulto. Explica biomecánica y el beneficio para su objetivo. Errores concretos, no genéricos. No inventes duración.",
+  notesHelp:
+    "Aquí no van videos. Dile cómo debe hablar cada tarjeta: tono, qué explicar, para quién.",
+  fichaGuide1: "Lista. Un ejercicio por línea, con series si las tienes.",
+  fichaGuide2:
+    "Video. Pega el YouTube al final de la línea de ese ejercicio. Ejemplo: Single-Leg RDL  https://youtu.be/…",
+  fichaGuide3:
+    "Texto. En Instrucciones pide tono y contenido: simple, biomecánica, errores, beneficio para running…",
+  voiceSimple: "Simple para adultos",
+  voiceSimpleText:
+    "Textos cortos, sin jerga, para un adulto que no es coach. Misma precisión.",
+  voiceBio: "Más biomecánica",
+  voiceBioText:
+    "En propósito y pasos explica qué músculo trabaja, por qué esa variante y el equipo exacto.",
+  voiceBenefit: "Beneficio al objetivo",
+  voiceBenefitText:
+    "Cada beneficio debe ligar el ejercicio al objetivo del atleta, no un texto genérico.",
   freeBrief: "Brief libre",
   freeBriefPh:
-    "Pega el brief completo: cliente, objetivo, calentamiento y bloque principal.",
+    "Pega el brief. Videos: en la misma línea del ejercicio. Al final, dile cómo escribir (simple, biomecánica, errores, beneficio).",
   useExample: "Usar ejemplo",
   generate: "Generar rutina",
   generating: "Generando…",
@@ -109,6 +133,7 @@ const es = {
     "Completa atleta, objetivo y al menos un bloque — o pega un brief libre.",
   statusReady: "Listo para generar",
   statusText: "Componiendo explicación biomecánica…",
+  statusOpen: "Texto listo. Abriendo la rutina; los bocetos siguen en segundo plano.",
   statusBocetos: "Generando bocetos ARMATUS…",
   statusBocetosFail: "boceto(s) pendiente(s): se pueden reintentar en cada ejercicio.",
   statusPublish: "Publicando link compartible…",
@@ -269,7 +294,7 @@ const en: { [K in keyof typeof es]: string } = {
   composerTitle: "Fill the card.",
   composerAccent: "We forge it.",
   composerLead:
-    "Required fields keep briefs from going empty. The card saves itself in this browser. If you already have the text (WhatsApp, notes), use Free brief. Progress is real: copy first, then sketches.",
+    "List the exercises. Put the YouTube video on that exercise’s line. In Copy instructions, tell the AI how to write the text the athlete will read.",
   coach: "Coach",
   coachPh: "Coach name",
   modeForm: "Card",
@@ -289,16 +314,40 @@ const en: { [K in keyof typeof es]: string } = {
   frequency: "Frequency",
   frequencyPh: "e.g. 2× per week",
   warmup: "Warm-up",
-  warmupPh: "One movement per line. Include equipment and dose if you have them.",
+  warmupPh: `90/90 hip switch — 2 × 6/side
+World’s greatest stretch — 2 × 5/side`,
+  warmupHelp:
+    "One movement per line, with sets if you have them. Video: paste it at the end of that same line.",
   mainBlock: "Main block",
-  mainPh: "One exercise per line, with sets × reps if you have them.",
+  mainPh: `Back squat — 4 × 6 @ RPE 7
+Single-Leg RDL — 3 × 8/side  https://www.youtube.com/watch?v=2C-uNgKwP6o
+Copenhagen plank — 3 × 20–30 s/side`,
+  mainHelp:
+    "One exercise per line. The YouTube link goes here, next to the name — not in Copy instructions. That is how it lands on that card.",
   constraints: "Injuries or constraints",
   constraintsPh: "Sensitive shoulder, no axial load, avoid lumbar flexion…",
-  notes: "Notes and videos",
-  notesPh: "Extra cues or YouTube URLs pasted next to the exercise.",
+  notes: "Copy instructions",
+  notesPh:
+    "Short copy for an adult. Explain biomechanics and the benefit for their goal. Concrete mistakes, not generic ones. Do not invent duration.",
+  notesHelp:
+    "Do not paste videos here. Tell the AI how each card should speak: tone, what to explain, who it is for.",
+  fichaGuide1: "List. One exercise per line, with sets if you have them.",
+  fichaGuide2:
+    "Video. Paste YouTube at the end of that exercise’s line. Example: Single-Leg RDL  https://youtu.be/…",
+  fichaGuide3:
+    "Copy. In Copy instructions ask for tone and content: simple, biomechanics, mistakes, running-specific benefit…",
+  voiceSimple: "Simple for adults",
+  voiceSimpleText:
+    "Short copy, no jargon, for an adult who is not a coach. Same precision.",
+  voiceBio: "More biomechanics",
+  voiceBioText:
+    "In purpose and steps, explain which muscle works, why this variation, and the exact equipment.",
+  voiceBenefit: "Benefit for the goal",
+  voiceBenefitText:
+    "Each benefit must tie the exercise to the athlete’s goal, not a generic line.",
   freeBrief: "Free brief",
   freeBriefPh:
-    "Paste the full brief: client, goal, warm-up, and main block.",
+    "Paste the brief. Videos: on the same line as the exercise. At the end, say how to write (simple, biomechanics, mistakes, benefit).",
   useExample: "Use example",
   generate: "Generate session",
   generating: "Generating…",
@@ -307,6 +356,7 @@ const en: { [K in keyof typeof es]: string } = {
     "Fill athlete, goal, and at least one block — or paste a free brief.",
   statusReady: "Ready to generate",
   statusText: "Writing biomechanics copy…",
+  statusOpen: "Copy ready. Opening the session; sketches continue in the background.",
   statusBocetos: "Generating ARMATUS sketches…",
   statusBocetosFail: "sketch(es) pending: retry on each exercise.",
   statusPublish: "Publishing shareable link…",

@@ -49,7 +49,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     backgroundColor: C.bg,
     color: C.text,
     paddingTop: clara ? 32 : 28,
-    paddingBottom: clara ? 48 : 40,
+    paddingBottom: clara ? 78 : 48,
     paddingHorizontal: clara ? 36 : 32,
     fontFamily: body,
   },
@@ -280,9 +280,27 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     fontFamily: display,
     fontWeight: 700,
   },
+  sketchMissing: {
+    width: "100%",
+    height: 48,
+    borderWidth: 1,
+    borderColor: "rgba(255,107,53,0.25)",
+    borderRadius: 10,
+    marginBottom: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: clara ? "#EFEAE3" : "rgba(28,28,30,0.9)",
+  },
+  sketchMissingText: {
+    fontSize: 8,
+    letterSpacing: 1.2,
+    color: C.muted,
+    textTransform: up,
+    fontFamily: display,
+    fontWeight: 700,
+  },
   grid2: {
     flexDirection: clara ? "column" : "row",
-    gap: 8,
     marginBottom: 8,
   },
   block: {
@@ -292,6 +310,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderColor: C.border,
     borderRadius: 10,
     padding: 9,
+    marginBottom: 8,
+    marginRight: clara ? 0 : 8,
   },
   blockTitle: {
     fontFamily: display,
@@ -300,10 +320,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     letterSpacing: 1.1,
     color: C.orangeSoft,
     textTransform: up,
-    marginBottom: 5,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    marginBottom: 6,
   },
   blockBody: {
     fontSize: clara ? 11 : 8.5,
@@ -313,7 +330,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   tags: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 3,
   },
   tag: {
     backgroundColor: "rgba(255,107,53,0.12)",
@@ -324,7 +340,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     paddingHorizontal: 5,
     fontSize: 7.5,
     color: C.orangeSoft,
-    marginBottom: 2,
+    marginBottom: 3,
+    marginRight: 3,
   },
   stepsBlock: {
     backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.9)",
@@ -337,7 +354,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   stepsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
   },
   step: {
     width: clara ? "100%" : "48.5%",
@@ -346,6 +362,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderColor: C.border,
     borderRadius: 7,
     padding: 7,
+    marginBottom: 6,
+    marginRight: clara ? 0 : 6,
   },
   stepN: {
     fontFamily: display,
@@ -363,7 +381,6 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   split: {
     flexDirection: clara ? "column" : "row",
-    gap: 8,
   },
   warn: {
     flex: 1,
@@ -372,6 +389,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderColor: clara ? "rgba(180,35,24,0.28)" : "rgba(255,69,58,0.28)",
     borderRadius: 10,
     padding: 9,
+    marginBottom: 8,
+    marginRight: clara ? 0 : 8,
   },
   benefit: {
     flex: 1,
@@ -380,6 +399,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderColor: clara ? "rgba(210,74,22,0.28)" : "rgba(255,107,53,0.28)",
     borderRadius: 10,
     padding: 9,
+    marginBottom: 8,
   },
   warnTitle: {
     fontFamily: display,
@@ -431,9 +451,9 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   pageFooter: {
     position: "absolute",
-    bottom: 18,
-    left: 32,
-    right: 32,
+    bottom: 22,
+    left: clara ? 36 : 32,
+    right: clara ? 36 : 32,
     flexDirection: "row",
     justifyContent: "space-between",
     borderTopWidth: 1,
@@ -682,17 +702,21 @@ function ExercisePage({
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image src={img} style={s.sketch} />
           <Text style={s.sketchCaption}>
-            Boceto · {clip(exercise.sketchCaption, 42, clara)}
+            Boceto · {clip(exercise.sketchCaption, 72, clara)}
           </Text>
         </View>
-      ) : null}
+      ) : (
+        <View style={s.sketchMissing} wrap={false}>
+          <Text style={s.sketchMissingText}>Boceto pendiente</Text>
+        </View>
+      )}
 
       <View style={s.grid2}>
-        <View style={s.block}>
+        <View style={s.block} wrap={false}>
           <Text style={s.blockTitle}>Propósito y enfoque</Text>
           <Text style={s.blockBody}>{clip(exercise.purpose, 280, clara)}</Text>
         </View>
-        <View style={s.block}>
+        <View style={s.block} wrap={false}>
           <Text style={s.blockTitle}>Enfoque muscular</Text>
           <View style={s.tags}>
             {exercise.muscles.slice(0, clara ? 10 : 6).map((m) => (
@@ -717,7 +741,7 @@ function ExercisePage({
       </View>
 
       <View style={s.split}>
-        <View style={s.warn}>
+        <View style={s.warn} wrap={false}>
           <Text style={s.warnTitle}>Errores comunes</Text>
           {mistakes.map((m, i) => (
             <Text key={`${exercise.id}-m-${i}`} style={s.listItem}>
@@ -725,14 +749,14 @@ function ExercisePage({
             </Text>
           ))}
         </View>
-        <View style={s.benefit}>
+        <View style={s.benefit} wrap={false}>
           <Text style={s.benefitTitle}>Beneficio</Text>
           <Text style={s.blockBody}>{clip(exercise.benefit, 220, clara)}</Text>
         </View>
       </View>
 
       {(exercise.supportLinks ?? []).length > 0 ? (
-        <View style={s.support}>
+        <View style={s.support} wrap={false}>
           <Text style={s.supportTitle}>Apoyo adicional</Text>
           {(exercise.supportLinks ?? []).slice(0, clara ? 6 : 3).map((link) => (
             <Link key={link.url} src={link.url} style={s.supportLink}>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Exercise, Routine } from "@/lib/types";
 import type { PdfVariant } from "@/lib/pdf/downloadPdf";
 import { formatDoseCard, whatsappShareUrl } from "@/lib/doseCard";
+import { fillMissingBocetos } from "@/lib/fillBocetosClient";
 import { fetchJson } from "@/lib/http";
 import { tx } from "@/lib/i18n";
 import { useStudioStore } from "@/lib/store";
@@ -78,6 +79,7 @@ export function RoutinePreview({
   const storeError = useStudioStore((s) => s.error);
   const setError = useStudioStore((s) => s.setError);
   const [doseMsg, setDoseMsg] = useState<string | null>(null);
+  const [bocetoStatus, setBocetoStatus] = useState<string | null>(null);
 
   function setMode(mode: PdfVariant) {
     setTheme(mode);
@@ -97,6 +99,37 @@ export function RoutinePreview({
   );
   const doseText = useMemo(() => formatDoseCard(live), [live]);
   const waUrl = whatsappShareUrl(doseText);
+
+  useEffect(() => {
+    if (!editable || athleteView) return;
+    if (!live.exercises.some((ex) => !ex.imageDataUrl)) return;
+    const snapshot = live;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      void fillMissingBocetos(null, snapshot, (msg) => {
+        if (!cancelled) setBocetoStatus(msg);
+      }).then(({ routine: filled, failedNames }) => {
+        if (cancelled) return;
+        for (const ex of filled.exercises) {
+          if (ex.imageDataUrl) {
+            updateExercise(ex.id, { imageDataUrl: ex.imageDataUrl });
+          }
+        }
+        setBocetoStatus(
+          failedNames.length > 0
+            ? `${failedNames.length} ${tx(locale, "statusBocetosFail")}`
+            : null,
+        );
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // Fill once per routine open; do not retrigger as images arrive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live.id, editable, athleteView]);
 
   const titleWords = live.objective.trim().split(/\s+/);
   const accentFrom =
@@ -386,6 +419,10 @@ export function RoutinePreview({
           <Link href={`/rutina/${live.id}`} className="btn btn--soft">
             {tx(locale, "openCoachView")}
           </Link>
+        </div>
+      ) : bocetoStatus ? (
+        <div className="athlete-banner no-print" role="status">
+          <span>{bocetoStatus}</span>
         </div>
       ) : null}
 
