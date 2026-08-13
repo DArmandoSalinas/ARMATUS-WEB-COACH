@@ -13,16 +13,18 @@ type SiteTopbarProps = {
 
 export function SiteTopbar({ end }: SiteTopbarProps) {
   return (
-    <header className="site-topbar no-print">
-      <Link href="/" className="site-topbar__brand" aria-label="ARMATUS Coach Studio">
-        <BrandMark size="compact" />
-      </Link>
-      <div className="site-topbar__end">
-        {end}
-        <RecentRoutines />
-        <LocaleToggle />
-        <ThemeToggle />
-      </div>
-    </header>
+    <>
+      <header className="site-topbar no-print">
+        <Link href="/" className="site-topbar__brand" aria-label="ARMATUS Coach Studio">
+          <BrandMark size="compact" />
+        </Link>
+        <div className="site-topbar__end">
+          {end}
+          <LocaleToggle />
+          <ThemeToggle />
+        </div>
+      </header>
+      <RecentRoutines />
+    </>
   );
 }

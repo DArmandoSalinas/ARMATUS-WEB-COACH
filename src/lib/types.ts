@@ -62,4 +62,6 @@ export type RoutineMeta = {
   clientName: string;
   objective: string;
   updatedAt: string;
+  level: Level;
+  blocks: number;
 };

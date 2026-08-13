@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/components/LocaleToggle";
@@ -12,7 +12,9 @@ import {
   getRoutineHydrated,
   listRoutineMeta,
 } from "@/lib/storage";
-import type { RoutineMeta } from "@/lib/types";
+import type { Level, RoutineMeta } from "@/lib/types";
+
+const LEVELS: Level[] = ["principiante", "intermedio", "avanzado"];
 
 function formatWhen(iso: string, locale: "es" | "en"): string {
   try {
@@ -27,6 +29,12 @@ function formatWhen(iso: string, locale: "es" | "en"): string {
   }
 }
 
+function levelLabel(locale: "es" | "en", level: Level): string {
+  if (level === "principiante") return tx(locale, "levelBeg");
+  if (level === "avanzado") return tx(locale, "levelAdv");
+  return tx(locale, "levelMid");
+}
+
 export function RecentRoutines() {
   const router = useRouter();
   const locale = useLocale();
@@ -34,6 +42,8 @@ export function RecentRoutines() {
   const [items, setItems] = useState<RoutineMeta[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [athlete, setAthlete] = useState("all");
+  const [level, setLevel] = useState<"all" | Level>("all");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -62,14 +72,28 @@ export function RecentRoutines() {
   }, [open]);
 
   const visible = items.filter((r) => r.id !== SEED_ROUTINE_ID);
+  const athletes = useMemo(() => {
+    const names = [...new Set(visible.map((r) => r.clientName.trim()).filter(Boolean))];
+    return names.sort((a, b) => a.localeCompare(b, locale));
+  }, [visible, locale]);
+
   const needle = query.trim().toLowerCase();
-  const filtered = needle
-    ? visible.filter(
-        (r) =>
-          r.clientName.toLowerCase().includes(needle) ||
-          r.objective.toLowerCase().includes(needle),
-      )
-    : visible;
+  const filtered = visible.filter((r) => {
+    if (athlete !== "all" && r.clientName !== athlete) return false;
+    if (level !== "all" && r.level !== level) return false;
+    if (!needle) return true;
+    const blob = `${r.clientName} ${r.objective} ${r.level} ${levelLabel(locale, r.level)}`.toLowerCase();
+    return blob.includes(needle);
+  });
+
+  useEffect(() => {
+    if (visible.length === 0) {
+      document.documentElement.classList.remove("has-routines-dock");
+      return;
+    }
+    document.documentElement.classList.add("has-routines-dock");
+    return () => document.documentElement.classList.remove("has-routines-dock");
+  }, [visible.length]);
 
   if (visible.length === 0) return null;
 
@@ -100,85 +124,145 @@ export function RecentRoutines() {
   const count = String(visible.length).padStart(2, "0");
 
   return (
-    <>
-      <button
-        type="button"
-        className="archive-trigger"
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
-      >
-        {tx(locale, "archive")}
-        <span className="archive-trigger__count">{count}</span>
-      </button>
-
+    <div
+      className="routines-dock no-print"
+      data-open={open ? "true" : "false"}
+    >
       {open ? (
-        <div className="archive no-print">
-          <button
-            type="button"
-            className="archive__scrim"
-            aria-label={tx(locale, "close")}
-            onClick={() => setOpen(false)}
-          />
-          <aside
-            className="archive__panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-          >
-            <header className="archive__head">
+        <button
+          type="button"
+          className="routines-dock__scrim"
+          aria-label={tx(locale, "close")}
+          onClick={() => setOpen(false)}
+        />
+      ) : null}
+
+      <div
+        className="routines-dock__sheet"
+        role={open ? "dialog" : undefined}
+        aria-modal={open || undefined}
+        aria-labelledby={titleId}
+      >
+        <button
+          type="button"
+          className="routines-dock__tab"
+          aria-expanded={open}
+          aria-controls={titleId}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className="routines-dock__grip" aria-hidden />
+          <span className="routines-dock__tab-label">{tx(locale, "archive")}</span>
+          <span className="routines-dock__count">{count}</span>
+        </button>
+
+        {open ? (
+          <div className="routines-dock__body">
+            <header className="routines-dock__head">
               <div>
-                <p id={titleId} className="archive__title">
+                <p id={titleId} className="routines-dock__title">
                   {tx(locale, "archive")}
                 </p>
-                <p className="archive__hint">{tx(locale, "archiveHint")}</p>
+                <p className="routines-dock__hint">{tx(locale, "archiveHint")}</p>
               </div>
               <button
                 type="button"
-                className="archive__close"
+                className="routines-dock__close"
                 onClick={() => setOpen(false)}
               >
                 {tx(locale, "close")}
               </button>
             </header>
 
-            {visible.length > 2 ? (
-              <label className="archive__search">
-                <span className="sr-only">{tx(locale, "searchRecent")}</span>
+            <div className="routines-dock__filters">
+              <label className="routines-dock__search">
+                <span>{tx(locale, "filterKeywords")}</span>
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={tx(locale, "searchRecent")}
+                  placeholder={tx(locale, "filterKeywordsPh")}
                   autoComplete="off"
                   autoFocus
                 />
               </label>
-            ) : null}
 
-            <div className="archive__list">
+              {athletes.length > 1 ? (
+                <div className="routines-dock__chips" role="group" aria-label={tx(locale, "filterAthlete")}>
+                  <span className="routines-dock__chip-label">
+                    {tx(locale, "filterAthlete")}
+                  </span>
+                  <button
+                    type="button"
+                    className={athlete === "all" ? "is-on" : ""}
+                    onClick={() => setAthlete("all")}
+                  >
+                    {tx(locale, "filterAll")}
+                  </button>
+                  {athletes.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      className={athlete === name ? "is-on" : ""}
+                      onClick={() => setAthlete(name)}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="routines-dock__chips" role="group" aria-label={tx(locale, "filterLevel")}>
+                <span className="routines-dock__chip-label">
+                  {tx(locale, "filterLevel")}
+                </span>
+                <button
+                  type="button"
+                  className={level === "all" ? "is-on" : ""}
+                  onClick={() => setLevel("all")}
+                >
+                  {tx(locale, "filterAll")}
+                </button>
+                {LEVELS.map((lv) => (
+                  <button
+                    key={lv}
+                    type="button"
+                    className={level === lv ? "is-on" : ""}
+                    onClick={() => setLevel(lv)}
+                  >
+                    {levelLabel(locale, lv)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="routines-dock__list">
               {filtered.length === 0 ? (
-                <p className="archive__empty">{tx(locale, "noRecentMatch")}</p>
+                <p className="routines-dock__empty">{tx(locale, "noRecentMatch")}</p>
               ) : (
                 filtered.map((r) => (
-                  <article key={r.id} className="archive-row">
+                  <article key={r.id} className="routine-card">
                     <Link
                       href={`/rutina/${r.id}`}
-                      className="archive-row__main"
+                      className="routine-card__main"
                       onClick={() => setOpen(false)}
                     >
-                      <span className="archive-row__name">{r.clientName}</span>
-                      <span className="archive-row__goal">{r.objective}</span>
+                      <div className="routine-card__meta">
+                        <span className="routine-card__level">
+                          {levelLabel(locale, r.level)}
+                        </span>
+                        {r.updatedAt ? (
+                          <time dateTime={r.updatedAt}>
+                            {formatWhen(r.updatedAt, locale)}
+                          </time>
+                        ) : null}
+                      </div>
+                      <h3 className="routine-card__name">{r.clientName}</h3>
+                      <p className="routine-card__goal">{r.objective}</p>
+                      <p className="routine-card__blocks">
+                        {String(r.blocks).padStart(2, "0")} {tx(locale, "blocks")}
+                      </p>
                     </Link>
-                    {r.updatedAt ? (
-                      <time
-                        className="archive-row__when"
-                        dateTime={r.updatedAt}
-                      >
-                        {formatWhen(r.updatedAt, locale)}
-                      </time>
-                    ) : null}
-                    <div className="archive-row__tools">
+                    <div className="routine-card__tools">
                       <button
                         type="button"
                         disabled={busyId === r.id}
@@ -199,9 +283,9 @@ export function RecentRoutines() {
                 ))
               )}
             </div>
-          </aside>
-        </div>
-      ) : null}
-    </>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }

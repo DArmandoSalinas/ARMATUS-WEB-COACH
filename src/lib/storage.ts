@@ -328,6 +328,8 @@ export function listRoutineMeta(): RoutineMeta[] {
       clientName: r.clientName,
       objective: r.objective,
       updatedAt: r.updatedAt,
+      level: r.level || "intermedio",
+      blocks: Array.isArray(r.exercises) ? r.exercises.length : 0,
     }))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
