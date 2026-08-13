@@ -269,7 +269,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   sketch: {
     width: "100%",
-    height: 354,
+    height: 200,
     objectFit: "contain",
     backgroundColor: "#050505",
     borderWidth: 1,
