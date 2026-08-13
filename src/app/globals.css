@@ -159,10 +159,9 @@ html.has-routines-dock body {
 .routines-dock__sheet {
   pointer-events: auto;
   position: absolute;
-  left: 50%;
+  left: 16px;
   bottom: 0;
-  transform: translateX(-50%);
-  width: min(720px, calc(100vw - 20px));
+  width: min(720px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
   max-height: min(78vh, 760px);
