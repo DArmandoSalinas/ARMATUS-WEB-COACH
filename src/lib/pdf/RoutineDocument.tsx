@@ -9,7 +9,9 @@ import {
 } from "@react-pdf/renderer";
 import type { Exercise, Routine } from "@/lib/types";
 
-const C = {
+export type PdfVariant = "studio" | "clara";
+
+const STUDIO = {
   bg: "#000000",
   surface: "#1C1C1E",
   elevated: "#2C2C2E",
@@ -22,26 +24,43 @@ const C = {
   danger: "#FF453A",
 };
 
-function createStyles(fallback: boolean) {
+const CLARA = {
+  bg: "#F7F4EE",
+  surface: "#FFFFFF",
+  elevated: "#FFFFFF",
+  border: "#E4DDD2",
+  orange: "#D24A16",
+  orangeDeep: "#B33D10",
+  orangeSoft: "#C44A1A",
+  text: "#1C1C1E",
+  muted: "#3A3A3C",
+  danger: "#B42318",
+};
+
+function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
+  const clara = variant === "clara";
+  const C = clara ? CLARA : STUDIO;
   const body = fallback ? "Helvetica" : "Outfit";
-  const display = fallback ? "Helvetica" : "BarlowCondensed";
+  const display = fallback ? "Helvetica" : clara ? "Outfit" : "BarlowCondensed";
+  const up = clara ? ("none" as const) : ("uppercase" as const);
+  const displayWeight = clara ? 600 : 800;
   return StyleSheet.create({
   page: {
     backgroundColor: C.bg,
     color: C.text,
-    paddingTop: 28,
-    paddingBottom: 40,
-    paddingHorizontal: 32,
+    paddingTop: clara ? 32 : 28,
+    paddingBottom: clara ? 48 : 40,
+    paddingHorizontal: clara ? 36 : 32,
     fontFamily: body,
   },
   coverPage: {
     backgroundColor: C.bg,
     color: C.text,
     paddingTop: 48,
-    paddingBottom: 48,
+    paddingBottom: 64,
     paddingHorizontal: 40,
     fontFamily: body,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
   brandRow: {
     flexDirection: "row",
@@ -63,7 +82,7 @@ function createStyles(fallback: boolean) {
     fontSize: 9,
     letterSpacing: 3,
     color: C.orange,
-    textTransform: "uppercase",
+    textTransform: up,
   },
   coachPill: {
     borderWidth: 1,
@@ -79,7 +98,7 @@ function createStyles(fallback: boolean) {
     fontSize: 9,
     letterSpacing: 2,
     color: C.orangeSoft,
-    textTransform: "uppercase",
+    textTransform: up,
   },
   eyebrowRow: {
     flexDirection: "row",
@@ -98,15 +117,15 @@ function createStyles(fallback: boolean) {
     fontSize: 10,
     letterSpacing: 3,
     color: C.orange,
-    textTransform: "uppercase",
+    textTransform: up,
   },
   coverTitle: {
     fontFamily: display,
-    fontWeight: 800,
-    fontSize: 42,
-    lineHeight: 0.95,
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    fontWeight: displayWeight,
+    fontSize: clara ? 34 : 42,
+    lineHeight: clara ? 1.12 : 0.95,
+    letterSpacing: clara ? 0.2 : 1,
+    textTransform: up,
     marginBottom: 18,
     maxWidth: "92%",
   },
@@ -114,7 +133,7 @@ function createStyles(fallback: boolean) {
     color: C.orange,
   },
   lead: {
-    fontSize: 11,
+    fontSize: clara ? 13 : 11,
     lineHeight: 1.55,
     color: C.muted,
     maxWidth: "85%",
@@ -128,7 +147,7 @@ function createStyles(fallback: boolean) {
   metaChip: {
     width: "18%",
     minWidth: 80,
-    backgroundColor: "rgba(28,28,30,0.95)",
+    backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.95)",
     borderWidth: 1,
     borderColor: "rgba(255,107,53,0.22)",
     borderRadius: 10,
@@ -148,10 +167,14 @@ function createStyles(fallback: boolean) {
     fontSize: 7,
     letterSpacing: 1.5,
     color: C.muted,
-    textTransform: "uppercase",
+    textTransform: up,
     textAlign: "center",
   },
   coverFooter: {
+    position: "absolute",
+    bottom: 28,
+    left: 40,
+    right: 40,
     borderTopWidth: 1,
     borderTopColor: C.border,
     paddingTop: 16,
@@ -178,7 +201,7 @@ function createStyles(fallback: boolean) {
     fontSize: 8,
     letterSpacing: 2,
     color: C.orangeSoft,
-    textTransform: "uppercase",
+    textTransform: up,
   },
   exHead: {
     flexDirection: "row",
@@ -193,24 +216,24 @@ function createStyles(fallback: boolean) {
   },
   exTitle: {
     fontFamily: display,
-    fontWeight: 800,
-    fontSize: 22,
-    lineHeight: 1.05,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    fontWeight: displayWeight,
+    fontSize: clara ? 20 : 22,
+    lineHeight: clara ? 1.2 : 1.05,
+    letterSpacing: clara ? 0.2 : 0.5,
+    textTransform: up,
     marginBottom: 5,
   },
   exTitleEm: {
     color: C.orange,
   },
   exIntro: {
-    fontSize: 9,
-    lineHeight: 1.4,
+    fontSize: clara ? 11 : 9,
+    lineHeight: clara ? 1.5 : 1.4,
     color: C.muted,
   },
   doseBox: {
     width: 118,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: clara ? "#FFFFFF" : "rgba(0,0,0,0.55)",
     borderWidth: 1,
     borderColor: "rgba(255,107,53,0.4)",
     borderRadius: 10,
@@ -221,7 +244,7 @@ function createStyles(fallback: boolean) {
     fontSize: 6.5,
     letterSpacing: 1.4,
     color: C.orange,
-    textTransform: "uppercase",
+    textTransform: up,
     marginBottom: 3,
     fontFamily: display,
     fontWeight: 700,
@@ -240,7 +263,7 @@ function createStyles(fallback: boolean) {
   },
   sketch: {
     width: "100%",
-    height: 155,
+    height: clara ? 210 : 155,
     objectFit: "contain",
     backgroundColor: "#050505",
     borderWidth: 1,
@@ -252,19 +275,19 @@ function createStyles(fallback: boolean) {
     fontSize: 7.5,
     letterSpacing: 1.4,
     color: C.orangeSoft,
-    textTransform: "uppercase",
+    textTransform: up,
     marginBottom: 8,
     fontFamily: display,
     fontWeight: 700,
   },
   grid2: {
-    flexDirection: "row",
+    flexDirection: clara ? "column" : "row",
     gap: 8,
     marginBottom: 8,
   },
   block: {
     flex: 1,
-    backgroundColor: "rgba(28,28,30,0.9)",
+    backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.9)",
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 10,
@@ -276,15 +299,15 @@ function createStyles(fallback: boolean) {
     fontSize: 9.5,
     letterSpacing: 1.1,
     color: C.orangeSoft,
-    textTransform: "uppercase",
+    textTransform: up,
     marginBottom: 5,
     paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
   blockBody: {
-    fontSize: 8.5,
-    lineHeight: 1.35,
+    fontSize: clara ? 11 : 8.5,
+    lineHeight: clara ? 1.5 : 1.35,
     color: C.muted,
   },
   tags: {
@@ -304,7 +327,7 @@ function createStyles(fallback: boolean) {
     marginBottom: 2,
   },
   stepsBlock: {
-    backgroundColor: "rgba(28,28,30,0.9)",
+    backgroundColor: clara ? "#FFFFFF" : "rgba(28,28,30,0.9)",
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 10,
@@ -317,8 +340,8 @@ function createStyles(fallback: boolean) {
     gap: 6,
   },
   step: {
-    width: "48.5%",
-    backgroundColor: "rgba(0,0,0,0.4)",
+    width: clara ? "100%" : "48.5%",
+    backgroundColor: clara ? "#F3EFE8" : "rgba(0,0,0,0.4)",
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 7,
@@ -330,31 +353,31 @@ function createStyles(fallback: boolean) {
     fontSize: 9,
     letterSpacing: 1,
     color: C.orange,
-    textTransform: "uppercase",
+    textTransform: up,
     marginBottom: 3,
   },
   stepBody: {
-    fontSize: 8,
-    lineHeight: 1.32,
+    fontSize: clara ? 11 : 8,
+    lineHeight: clara ? 1.45 : 1.32,
     color: C.muted,
   },
   split: {
-    flexDirection: "row",
+    flexDirection: clara ? "column" : "row",
     gap: 8,
   },
   warn: {
     flex: 1,
-    backgroundColor: "rgba(255,69,58,0.08)",
+    backgroundColor: clara ? "rgba(180,35,24,0.08)" : "rgba(255,69,58,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(255,69,58,0.28)",
+    borderColor: clara ? "rgba(180,35,24,0.28)" : "rgba(255,69,58,0.28)",
     borderRadius: 10,
     padding: 9,
   },
   benefit: {
     flex: 1,
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: clara ? "rgba(210,74,22,0.08)" : "rgba(255,107,53,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(255,107,53,0.28)",
+    borderColor: clara ? "rgba(210,74,22,0.28)" : "rgba(255,107,53,0.28)",
     borderRadius: 10,
     padding: 9,
   },
@@ -364,7 +387,7 @@ function createStyles(fallback: boolean) {
     fontSize: 9,
     letterSpacing: 1.3,
     color: C.danger,
-    textTransform: "uppercase",
+    textTransform: up,
     marginBottom: 4,
   },
   benefitTitle: {
@@ -373,20 +396,20 @@ function createStyles(fallback: boolean) {
     fontSize: 9,
     letterSpacing: 1.3,
     color: C.orange,
-    textTransform: "uppercase",
+    textTransform: up,
     marginBottom: 4,
   },
   listItem: {
-    fontSize: 8,
-    lineHeight: 1.32,
+    fontSize: clara ? 11 : 8,
+    lineHeight: clara ? 1.45 : 1.32,
     color: C.muted,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   support: {
     marginTop: 8,
-    backgroundColor: "rgba(142,142,147,0.1)",
+    backgroundColor: clara ? "#FFFFFF" : "rgba(142,142,147,0.1)",
     borderWidth: 1,
-    borderColor: "rgba(142,142,147,0.28)",
+    borderColor: C.border,
     borderRadius: 10,
     padding: 9,
   },
@@ -396,7 +419,7 @@ function createStyles(fallback: boolean) {
     fontSize: 9,
     letterSpacing: 1.3,
     color: C.muted,
-    textTransform: "uppercase",
+    textTransform: up,
     marginBottom: 4,
   },
   supportLink: {
@@ -426,7 +449,7 @@ function createStyles(fallback: boolean) {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
@@ -447,7 +470,7 @@ function createStyles(fallback: boolean) {
     fontWeight: 700,
     fontSize: 14,
     letterSpacing: 0.5,
-    textTransform: "uppercase",
+    textTransform: up,
   },
   tocBadge: {
     fontSize: 8,
@@ -470,9 +493,11 @@ function splitTitle(objective: string) {
 function CoverPage({
   routine,
   styles: s,
+  variant,
 }: {
   routine: Routine;
   styles: ReturnType<typeof createStyles>;
+  variant: PdfVariant;
 }) {
   const { main, accent } = splitTitle(routine.objective);
   const exercises = [...routine.exercises].sort((a, b) => a.order - b.order);
@@ -505,8 +530,9 @@ function CoverPage({
         </Text>
 
         <Text style={s.lead}>
-          Protocolo biomecánico con dosificación, ejecución técnica, errores
-          comunes y bocetos ARMATUS — listo para entrenar.
+          {variant === "clara"
+            ? "Guía fácil de leer: cómo hacer cada ejercicio, cuántas repeticiones, errores a evitar y bocetos ARMATUS."
+            : "Protocolo biomecánico con dosificación, ejecución técnica, errores comunes y bocetos ARMATUS — listo para entrenar."}
         </Text>
 
         <View style={s.metaRow}>
@@ -547,21 +573,16 @@ function CoverPage({
               paddingBottom: 0,
             }}
           >
-            Contenido
+            Protocolo listo para entrenar
           </Text>
-          {exercises.map((ex, i) => (
-            <View key={ex.id} style={s.tocItem} wrap={false}>
-              <Text style={s.tocNum}>{String(i + 1).padStart(2, "0")}</Text>
-              <View>
-                <Text style={s.tocLabel}>{ex.name}</Text>
-                <Text style={s.tocBadge}>{ex.badge}</Text>
-              </View>
-            </View>
-          ))}
+          <Text style={s.lead}>
+            {exercises.length} bloque{exercises.length === 1 ? "" : "s"} · el
+            índice va en la página siguiente.
+          </Text>
         </View>
       </View>
 
-      <View style={s.coverFooter}>
+      <View style={s.coverFooter} fixed>
         <Text style={s.coverFooterText}>
           ARMATUS · Protocolo de fuerza · {routine.clientName}
           {routine.coachName ? ` · Coach ${routine.coachName}` : ""}
@@ -571,9 +592,38 @@ function CoverPage({
   );
 }
 
-function clip(text: string, max: number): string {
+function TocPage({
+  routine,
+  styles: s,
+}: {
+  routine: Routine;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const exercises = [...routine.exercises].sort((a, b) => a.order - b.order);
+  return (
+    <Page size="A4" style={s.page}>
+      <Text style={s.eyebrow}>Contenido</Text>
+      <Text style={{ ...s.exTitle, marginBottom: 16 }}>Índice de bloques</Text>
+      {exercises.map((ex, i) => (
+        <View key={ex.id} style={s.tocItem} wrap={false}>
+          <Text style={s.tocNum}>{String(i + 1).padStart(2, "0")}</Text>
+          <View>
+            <Text style={s.tocLabel}>{ex.name}</Text>
+            <Text style={s.tocBadge}>{ex.badge}</Text>
+          </View>
+        </View>
+      ))}
+      <View style={s.pageFooter} fixed>
+        <Text style={s.pageFooterText}>ARMATUS · {routine.clientName}</Text>
+        <Text style={s.pageFooterText}>Índice</Text>
+      </View>
+    </Page>
+  );
+}
+
+function clip(text: string, max: number, unlimited = false): string {
   const t = text.trim();
-  if (t.length <= max) return t;
+  if (unlimited || t.length <= max) return t;
   return `${t.slice(0, max - 1).trimEnd()}…`;
 }
 
@@ -582,51 +632,57 @@ function ExercisePage({
   index,
   routine,
   styles: s,
+  variant,
 }: {
   exercise: Exercise;
   index: number;
   routine: Routine;
   styles: ReturnType<typeof createStyles>;
+  variant: PdfVariant;
 }) {
   const img = exercise.imageDataUrl;
   const doseMeta = [exercise.dose.rpe, exercise.dose.rest]
     .filter(Boolean)
     .join(" · ");
   const pageLabel = `${String(index + 1).padStart(2, "0")} / ${String(routine.exercises.length).padStart(2, "0")}`;
-  // Cap blocks so a long AI response never forces an orphan wrap page
-  const steps = exercise.steps.slice(0, 4);
-  const mistakes = exercise.commonMistakes.slice(0, 3);
+  const clara = variant === "clara";
+  const steps = clara ? exercise.steps : exercise.steps.slice(0, 4);
+  const mistakes = (clara
+    ? exercise.commonMistakes
+    : exercise.commonMistakes.slice(0, 3)
+  ).filter(Boolean);
 
   return (
-    // One exercise = one page. Avoids empty black "continuation" pages.
-    <Page size="A4" style={s.page} wrap={false}>
+    <Page size="A4" style={s.page} wrap={clara}>
       <View style={s.exBadge}>
         <Text style={s.exBadgeText}>{exercise.badge}</Text>
       </View>
 
-      <View style={s.exHead}>
+      <View style={s.exHead} wrap={false}>
         <View style={s.exHeadMain}>
           <Text style={s.exTitle}>
-            {clip(exercise.name, 48)}
+            {clip(exercise.name, 48, clara)}
             {exercise.nameEn ? (
-              <Text style={s.exTitleEm}>{` (${clip(exercise.nameEn, 28)})`}</Text>
+              <Text style={s.exTitleEm}>{` (${clip(exercise.nameEn, 28, clara)})`}</Text>
             ) : null}
           </Text>
-          <Text style={s.exIntro}>{clip(exercise.intro, 220)}</Text>
+          <Text style={s.exIntro}>{clip(exercise.intro, 220, clara)}</Text>
         </View>
         <View style={s.doseBox}>
           <Text style={s.doseLabel}>Dosificación</Text>
-          <Text style={s.doseValue}>{clip(exercise.dose.setsReps, 28)}</Text>
-          {doseMeta ? <Text style={s.doseMeta}>{clip(doseMeta, 36)}</Text> : null}
+          <Text style={s.doseValue}>{clip(exercise.dose.setsReps, 28, clara)}</Text>
+          {doseMeta ? (
+            <Text style={s.doseMeta}>{clip(doseMeta, 36, clara)}</Text>
+          ) : null}
         </View>
       </View>
 
       {img ? (
-        <View>
+        <View wrap={false}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image src={img} style={s.sketch} />
           <Text style={s.sketchCaption}>
-            Boceto · {clip(exercise.sketchCaption, 42)}
+            Boceto · {clip(exercise.sketchCaption, 42, clara)}
           </Text>
         </View>
       ) : null}
@@ -634,12 +690,12 @@ function ExercisePage({
       <View style={s.grid2}>
         <View style={s.block}>
           <Text style={s.blockTitle}>Propósito y enfoque</Text>
-          <Text style={s.blockBody}>{clip(exercise.purpose, 280)}</Text>
+          <Text style={s.blockBody}>{clip(exercise.purpose, 280, clara)}</Text>
         </View>
         <View style={s.block}>
           <Text style={s.blockTitle}>Enfoque muscular</Text>
           <View style={s.tags}>
-            {exercise.muscles.slice(0, 6).map((m) => (
+            {exercise.muscles.slice(0, clara ? 10 : 6).map((m) => (
               <Text key={m} style={s.tag}>
                 {m}
               </Text>
@@ -652,9 +708,9 @@ function ExercisePage({
         <Text style={s.blockTitle}>Cómo ejecutarlo</Text>
         <View style={s.stepsGrid}>
           {steps.map((step, i) => (
-            <View key={`${exercise.id}-s-${i}`} style={s.step}>
-              <Text style={s.stepN}>{clip(step.title, 28)}</Text>
-              <Text style={s.stepBody}>{clip(step.body, 160)}</Text>
+            <View key={`${exercise.id}-s-${i}`} style={s.step} wrap={false}>
+              <Text style={s.stepN}>{clip(step.title, 28, clara)}</Text>
+              <Text style={s.stepBody}>{clip(step.body, 160, clara)}</Text>
             </View>
           ))}
         </View>
@@ -663,24 +719,24 @@ function ExercisePage({
       <View style={s.split}>
         <View style={s.warn}>
           <Text style={s.warnTitle}>Errores comunes</Text>
-          {mistakes.map((m) => (
-            <Text key={m} style={s.listItem}>
-              • {clip(m, 110)}
+          {mistakes.map((m, i) => (
+            <Text key={`${exercise.id}-m-${i}`} style={s.listItem}>
+              • {clip(m, 110, clara)}
             </Text>
           ))}
         </View>
         <View style={s.benefit}>
           <Text style={s.benefitTitle}>Beneficio</Text>
-          <Text style={s.blockBody}>{clip(exercise.benefit, 220)}</Text>
+          <Text style={s.blockBody}>{clip(exercise.benefit, 220, clara)}</Text>
         </View>
       </View>
 
       {(exercise.supportLinks ?? []).length > 0 ? (
         <View style={s.support}>
           <Text style={s.supportTitle}>Apoyo adicional</Text>
-          {(exercise.supportLinks ?? []).slice(0, 3).map((link) => (
+          {(exercise.supportLinks ?? []).slice(0, clara ? 6 : 3).map((link) => (
             <Link key={link.url} src={link.url} style={s.supportLink}>
-              {clip(link.label || link.url, 72)}
+              {clip(link.label || link.url, 72, clara)}
             </Link>
           ))}
         </View>
@@ -697,21 +753,24 @@ function ExercisePage({
 export function RoutineDocument({
   routine,
   useFallbackFonts = false,
+  variant = "studio",
 }: {
   routine: Routine;
   useFallbackFonts?: boolean;
+  variant?: PdfVariant;
 }) {
-  const s = createStyles(useFallbackFonts);
+  const s = createStyles(useFallbackFonts, variant);
   const exercises = [...routine.exercises].sort((a, b) => a.order - b.order);
 
   return (
     <Document
-      title={`ARMATUS · ${routine.clientName}`}
+      title={`ARMATUS · ${routine.clientName}${variant === "clara" ? " (versión clara)" : ""}`}
       author={routine.coachName || "ARMATUS Coach Studio"}
       subject={routine.objective}
       creator="ARMATUS Coach Studio"
     >
-      <CoverPage routine={routine} styles={s} />
+      <CoverPage routine={routine} styles={s} variant={variant} />
+      <TocPage routine={routine} styles={s} />
       {exercises.map((ex, i) => (
         <ExercisePage
           key={ex.id}
@@ -719,6 +778,7 @@ export function RoutineDocument({
           index={i}
           routine={routine}
           styles={s}
+          variant={variant}
         />
       ))}
     </Document>

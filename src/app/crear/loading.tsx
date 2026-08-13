@@ -1,6 +1,6 @@
 import { SiteTopbar } from "@/components/SiteTopbar";
 
-export default function RutinaLoading() {
+export default function CrearLoading() {
   return (
     <div className="relative z-10 flex min-h-dvh flex-col">
       <SiteTopbar />

@@ -80,7 +80,8 @@ export async function resolveExerciseBoceto(
       const caption = resolveBocetoCaption(ctx.name, textCtx);
       return {
         imageDataUrl: path,
-        sketchCaption: caption || ctx.sketchCaption,
+        // Never replace a coach-written caption with a generic library label.
+        sketchCaption: ctx.sketchCaption || caption || undefined,
         source: "library",
       };
     }
@@ -116,7 +117,7 @@ export async function attachBocetos(
         return {
           ...ex,
           imageDataUrl: path,
-          sketchCaption: caption || ex.sketchCaption,
+          sketchCaption: ex.sketchCaption || caption || "Vista técnica",
         };
       }
 

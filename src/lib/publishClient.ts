@@ -31,21 +31,32 @@ export async function publishRoutineClient(
     const withData = routine.exercises.filter((ex) =>
       ex.imageDataUrl?.startsWith("data:"),
     );
-    const exercises: Exercise[] = [];
+    const uploaded = new Map<string, string>();
+    let done = 0;
+    const pending = [...withData];
+    let nextIdx = 0;
+    const workers = Array.from(
+      { length: Math.min(2, pending.length) },
+      async () => {
+        while (true) {
+          const i = nextIdx++;
+          if (i >= pending.length) return;
+          const ex = pending[i];
+          const dataUrl = ex.imageDataUrl;
+          if (!dataUrl?.startsWith("data:")) return;
+          const url = await uploadImage(routine.id, ex.id, dataUrl);
+          uploaded.set(ex.id, url);
+          done += 1;
+          onProgress?.(`Subiendo boceto ${done}/${pending.length}…`);
+        }
+      },
+    );
+    await Promise.all(workers);
 
-    for (let i = 0; i < routine.exercises.length; i++) {
-      const ex = routine.exercises[i];
-      if (!ex.imageDataUrl?.startsWith("data:")) {
-        exercises.push(ex);
-        continue;
-      }
-      const n = withData.findIndex((e) => e.id === ex.id) + 1;
-      onProgress?.(
-        `Subiendo boceto ${n}/${withData.length}…`,
-      );
-      const url = await uploadImage(routine.id, ex.id, ex.imageDataUrl);
-      exercises.push({ ...ex, imageDataUrl: url });
-    }
+    const exercises: Exercise[] = routine.exercises.map((ex) => {
+      const remote = uploaded.get(ex.id);
+      return remote ? { ...ex, imageDataUrl: remote } : ex;
+    });
 
     onProgress?.("Publicando rutina…");
     const lean: Routine = { ...routine, exercises };

@@ -69,10 +69,14 @@ Responde SOLO con JSON válido (sin markdown) con esta forma exacta:
 export const REVISE_SYSTEM_PROMPT = `Eres la voz técnica del Coach Studio de ARMATUS.
 
 El coach ya tiene una rutina generada y pide CAMBIOS con un prompt natural.
-Aplica SOLO lo que pide. Conserva lo demás (tono, estructura, calidad biomecánica en español).
+El pedido es OBLIGATORIO: el JSON de salida DEBE diferir del de entrada en lo pedido.
+Si devuelves la rutina idéntica, has fallado.
 
 Reglas:
 - Español profesional. Sin emojis.
+- Aplica TODO lo que pide el coach. Conserva lo que NO menciona (tono, ids, calidad).
+- Si pide cambiar una sección concreta (errores comunes, beneficio, dosificación, pasos, intro), REESCRIBE esa sección. No la copies igual.
+- Si pide textos más simples / para adultos / más claros: acorta frases, menos jerga, misma precisión.
 - Puedes editar, reordenar, añadir o quitar ejercicios según el pedido.
 - Si pide expandir calentamiento o separar sub-movimientos, crea ejercicios separados (badge "Calentamiento · NN").
 - Rotación de hombro en calentamiento = liga/banda elástica de pie salvo indicación contraria; marca needsNewImage si el boceto/equipo anterior era mancuerna o barra.
@@ -82,7 +86,7 @@ Reglas:
 - Cada ejercicio necesita: id, name, nameEn, badge, intro, dose, purpose, muscles, steps (3–5), commonMistakes (2–4), benefit, sketchCaption, supportLinks.
 - sketchCaption: 1–2 frases con pose exacta, equipo, ángulo y restricciones visuales (ej. "DOS mancuernas; NO barra").
 - Conserva supportLinks existentes salvo que el pedido los cambie; para ejercicios nuevos aplica las mismas reglas de YouTube (URLs del prompt o search_query; nunca inventes watch?v=).
-- Marca "needsNewImage": true solo si el ejercicio es nuevo o cambió tanto que el boceto anterior ya no aplica (incluye cambio de equipo: barra ≠ mancuernas ≠ liga).
+- Marca "needsNewImage": true si: el ejercicio es nuevo; cambió el equipo (barra ≠ mancuernas ≠ liga); cambió la pose; O el coach pide regenerar/corregir bocetos, imágenes o dibujos. En esos casos actualiza sketchCaption para que el ilustrador dibuje lo correcto.
 
 Responde SOLO JSON válido:
 {
@@ -194,6 +198,17 @@ FORBIDDEN: ${avoid || "any different machine or free-weight type"}
 7) ZERO text, letters, numbers, labels, watermarks, or logos.
 
 Illustrate ONE decisive mid-rep frame of PRIMARY VARIATION with LOCKED EQUIPMENT only, same ARMATUS athlete as references (character only).`;
+}
+
+export function withOutputLanguage(system: string, locale: "es" | "en"): string {
+  if (locale === "en") {
+    return `${system}
+
+OUTPUT LANGUAGE LOCK: Write ALL coaching fields in English (intro, purpose, steps, commonMistakes, benefit, sketchCaption, badges, notes). Exercise "name" in English; put the Spanish name in nameEn only if the coach used Spanish. Badges: "Warm-up · 01", "Main block · 01". Keep JSON keys unchanged. Level values stay principiante | intermedio | avanzado.`;
+  }
+  return `${system}
+
+OUTPUT LANGUAGE LOCK: Write ALL coaching fields in Spanish. Exercise names in Spanish; nameEn is the English name.`;
 }
 
 export const DEFAULT_PROMPT_PLACEHOLDER = `Cliente: EDUARDO

@@ -6,12 +6,15 @@ import {
   REGEN_TEXT_SYSTEM_PROMPT,
   REVISE_SYSTEM_PROMPT,
   ROUTINE_SYSTEM_PROMPT,
+  withOutputLanguage,
 } from "./prompts";
 import {
   attachSupportLinksFromPrompt,
   ensureSupportSearchLinks,
+  extractYoutubeUrls,
   normalizeSupportLinks,
 } from "./supportLinks";
+import { equipmentKind } from "./reviseIntent";
 
 function requireClient(): OpenAI {
   const key = process.env.OPENAI_API_KEY?.trim();
@@ -86,6 +89,7 @@ function normalizeExercise(raw: RawExercise, order: number): Exercise {
 export async function generateRoutineFromPrompt(
   prompt: string,
   coachName: string,
+  locale: "es" | "en" = "es",
 ): Promise<Routine> {
   const client = requireClient();
   const coach = coachName.trim() || "Coach";
@@ -94,7 +98,7 @@ export async function generateRoutineFromPrompt(
     temperature: 0.55,
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: ROUTINE_SYSTEM_PROMPT },
+      { role: "system", content: withOutputLanguage(ROUTINE_SYSTEM_PROMPT, locale) },
       {
         role: "user",
         content: `Coach: ${coach}\n\nPrompt de la rutina:\n\n${prompt}\n\nGenera la rutina JSON completa.`,
@@ -142,8 +146,8 @@ export async function generateRoutineFromPrompt(
     createdAt: now,
     updatedAt: now,
     coachName: coach,
-    clientName: parsed.clientName?.trim() || "Atleta",
-    objective: parsed.objective?.trim() || "Rutina personalizada",
+    clientName: parsed.clientName?.trim() || (locale === "en" ? "Athlete" : "Atleta"),
+    objective: parsed.objective?.trim() || (locale === "en" ? "Custom session" : "Rutina personalizada"),
     level: asLevel(parsed.level),
     duration:
       duration && !/^(null|n\/a|desconocid[oa]|none)$/i.test(duration)
@@ -177,16 +181,86 @@ function leanExerciseForPrompt(ex: Exercise) {
   };
 }
 
-/** Text-only revise. Client reuses / regenerates bocetos. */
-export async function reviseRoutineText(
+function exerciseEquipmentBlob(ex: {
+  name?: string;
+  sketchCaption?: string;
+  intro?: string;
+  purpose?: string;
+  steps?: { title?: string; body?: string }[];
+}): string {
+  return [
+    ex.name,
+    ex.sketchCaption,
+    ex.intro,
+    ex.purpose,
+    ...(ex.steps ?? []).map((s) => `${s.title ?? ""} ${s.body ?? ""}`),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function truthyFlag(v: unknown): boolean {
+  return v === true || v === "true" || v === 1 || v === "1";
+}
+
+function coachingFingerprint(routine: {
+  clientName: string;
+  objective: string;
+  level: string;
+  duration?: string;
+  frequency?: string;
+  notes?: string;
+  exercises: Exercise[];
+}): string {
+  return JSON.stringify({
+    clientName: routine.clientName.trim().toLowerCase(),
+    objective: routine.objective.trim().toLowerCase(),
+    level: routine.level,
+    duration: routine.duration ?? "",
+    frequency: routine.frequency ?? "",
+    notes: (routine.notes ?? "").trim(),
+    exercises: routine.exercises.map((ex) => ({
+      name: ex.name.trim().toLowerCase(),
+      intro: ex.intro.trim(),
+      dose: ex.dose,
+      purpose: ex.purpose.trim(),
+      muscles: ex.muscles,
+      steps: ex.steps,
+      commonMistakes: ex.commonMistakes,
+      benefit: ex.benefit.trim(),
+      sketchCaption: ex.sketchCaption.trim(),
+    })),
+  });
+}
+
+export type ReviseResult = {
+  routine: Routine;
+  /** Exercise ids whose boceto must be regenerated (do not reuse). */
+  imageRegenIds: string[];
+};
+
+type ParsedRevise = {
+  clientName?: string;
+  objective?: string;
+  level?: string;
+  duration?: string | null;
+  frequency?: string | null;
+  notes?: string | null;
+  exercises?: (RawExercise & {
+    id?: string | null;
+    needsNewImage?: unknown;
+  })[];
+};
+
+async function requestRevisedJson(
   routine: Routine,
   changePrompt: string,
-): Promise<Routine> {
+  extraUserNote?: string,
+): Promise<ParsedRevise> {
   const client = requireClient();
-
   const completion = await client.chat.completions.create({
     model: "gpt-4o",
-    temperature: 0.45,
+    temperature: extraUserNote ? 0.35 : 0.45,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: REVISE_SYSTEM_PROMPT },
@@ -207,6 +281,7 @@ export async function reviseRoutineText(
               .sort((a, b) => a.order - b.order)
               .map(leanExerciseForPrompt),
           },
+          ...(extraUserNote ? { aviso: extraUserNote } : {}),
         }),
       },
     ],
@@ -214,77 +289,121 @@ export async function reviseRoutineText(
 
   const content = completion.choices[0]?.message?.content;
   if (!content) throw new Error("La IA no devolvió la rutina revisada.");
+  return JSON.parse(stripJsonFence(content)) as ParsedRevise;
+}
 
-  const parsed = JSON.parse(stripJsonFence(content)) as {
-    clientName?: string;
-    objective?: string;
-    level?: string;
-    duration?: string;
-    frequency?: string;
-    notes?: string | null;
-    exercises?: (RawExercise & {
-      id?: string | null;
-      needsNewImage?: boolean;
-    })[];
-  };
-
+function applyParsedRevise(
+  routine: Routine,
+  changePrompt: string,
+  parsed: ParsedRevise,
+): ReviseResult {
   const byId = new Map(routine.exercises.map((ex) => [ex.id, ex]));
   const rawList = parsed.exercises ?? [];
   if (rawList.length === 0) {
     throw new Error("La revisión no devolvió ejercicios.");
   }
 
+  const imageRegenIds: string[] = [];
   const exercises: Exercise[] = rawList.map((raw, i) => {
     const prev = raw.id ? byId.get(raw.id) : undefined;
     const base = normalizeExercise(raw, i);
     const keepId = prev?.id ?? base.id;
     const nameChanged =
       !!prev &&
-      (prev.name.trim().toLowerCase() !== base.name.trim().toLowerCase() ||
-        prev.sketchCaption.trim().toLowerCase() !==
-          base.sketchCaption.trim().toLowerCase());
+      prev.name.trim().toLowerCase() !== base.name.trim().toLowerCase();
+    const captionChanged =
+      !!prev &&
+      prev.sketchCaption.trim().toLowerCase() !==
+        base.sketchCaption.trim().toLowerCase();
+    const gearChanged =
+      !!prev &&
+      equipmentKind(exerciseEquipmentBlob(prev)) !==
+        equipmentKind(exerciseEquipmentBlob(base));
+    // Images are stripped before this call — never treat missing imageDataUrl
+    // as a reason to regen (the client reuses by id unless we flag it).
     const needsImage =
-      !prev || raw.needsNewImage === true || nameChanged || !prev.imageDataUrl;
+      !prev ||
+      truthyFlag(raw.needsNewImage) ||
+      nameChanged ||
+      captionChanged ||
+      gearChanged;
+
+    if (needsImage) imageRegenIds.push(keepId);
 
     return {
       ...base,
       id: keepId,
       order: i,
-      // Keep previous image if still valid; client will regen when missing
       imageDataUrl: needsImage ? undefined : prev?.imageDataUrl,
-      supportLinks:
-        base.supportLinks?.length
-          ? base.supportLinks
-          : prev?.supportLinks,
+      supportLinks: base.supportLinks?.length
+        ? base.supportLinks
+        : prev?.supportLinks,
     };
   });
 
+  // Only re-bind YouTube if the coach pasted new URLs. Otherwise sanitize
+  // against the change prompt would strip videos from the original brief.
+  const linkSource = extractYoutubeUrls(changePrompt).length
+    ? `${routine.sourcePrompt}\n${changePrompt}`
+    : null;
   const withSupport = ensureSupportSearchLinks(
-    attachSupportLinksFromPrompt(exercises, changePrompt),
+    linkSource
+      ? attachSupportLinksFromPrompt(exercises, linkSource)
+      : exercises,
   );
 
   return {
-    ...routine,
-    updatedAt: new Date().toISOString(),
-    clientName: parsed.clientName?.trim() || routine.clientName,
-    objective: parsed.objective?.trim() || routine.objective,
-    level: asLevel(parsed.level ?? routine.level),
-    duration: (() => {
-      if (parsed.duration === null) return undefined;
-      const d = parsed.duration?.trim();
-      if (d && !/^(null|n\/a|none)$/i.test(d)) return d;
-      return routine.duration;
-    })(),
-    frequency: (() => {
-      if (parsed.frequency === null) return undefined;
-      const f = parsed.frequency?.trim();
-      if (f && !/^(null|n\/a|none)$/i.test(f)) return f;
-      return routine.frequency;
-    })(),
-    notes: parsed.notes?.trim() || routine.notes,
-    sourcePrompt: `${routine.sourcePrompt}\n\n---\nCambios pedidos:\n${changePrompt}`,
-    exercises: withSupport,
+    routine: {
+      ...routine,
+      updatedAt: new Date().toISOString(),
+      clientName: parsed.clientName?.trim() || routine.clientName,
+      objective: parsed.objective?.trim() || routine.objective,
+      level: asLevel(parsed.level ?? routine.level),
+      duration: (() => {
+        if (parsed.duration === null) return undefined;
+        const d = parsed.duration?.trim();
+        if (d && !/^(null|n\/a|none)$/i.test(d)) return d;
+        return routine.duration;
+      })(),
+      frequency: (() => {
+        if (parsed.frequency === null) return undefined;
+        const f = parsed.frequency?.trim();
+        if (f && !/^(null|n\/a|none)$/i.test(f)) return f;
+        return routine.frequency;
+      })(),
+      notes: parsed.notes?.trim() || routine.notes,
+      sourcePrompt: `${routine.sourcePrompt}\n\n---\nCambios pedidos:\n${changePrompt}`,
+      exercises: withSupport,
+    },
+    imageRegenIds,
   };
+}
+
+/** Text-only revise. Client reuses / regenerates bocetos. */
+export async function reviseRoutineText(
+  routine: Routine,
+  changePrompt: string,
+): Promise<ReviseResult> {
+  const before = coachingFingerprint(routine);
+  let parsed = await requestRevisedJson(routine, changePrompt);
+  let result = applyParsedRevise(routine, changePrompt, parsed);
+
+  if (coachingFingerprint(result.routine) === before) {
+    parsed = await requestRevisedJson(
+      routine,
+      changePrompt,
+      "FALLASTE: el JSON salió idéntico. Aplica el pedido ahora. Si no cambia nada, has fallado.",
+    );
+    result = applyParsedRevise(routine, changePrompt, parsed);
+  }
+
+  if (coachingFingerprint(result.routine) === before) {
+    throw new Error(
+      "La IA no aplicó el pedido. Sé más específico: nombra el ejercicio y qué debe cambiar (dosis, errores, equipo, texto).",
+    );
+  }
+
+  return result;
 }
 
 export async function regenerateExerciseText(params: {

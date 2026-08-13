@@ -13,11 +13,13 @@ import {
 type StudioState = {
   hydrated: boolean;
   current: Routine | null;
+  previous: Routine | null;
   generating: boolean;
   error: string | null;
   hydrate: () => void;
   loadRoutine: (id: string) => Promise<Routine | null>;
   setCurrent: (routine: Routine) => Promise<void>;
+  restorePrevious: () => Promise<boolean>;
   persist: () => Promise<void>;
   updateExercise: (exerciseId: string, patch: Partial<Exercise>) => void;
   replaceExercise: (exerciseId: string, next: Exercise) => void;
@@ -30,6 +32,10 @@ type StudioState = {
 function reindex(exercises: Exercise[]): Exercise[] {
   return exercises.map((ex, i) => ({ ...ex, order: i }));
 }
+
+const PERSIST_DEBOUNCE_MS = 450;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingRoutine: Routine | null = null;
 
 async function persistSafe(
   routine: Routine,
@@ -49,9 +55,34 @@ async function persistSafe(
   }
 }
 
+function schedulePersist(
+  routine: Routine,
+  set: (partial: Partial<StudioState>) => void,
+) {
+  pendingRoutine = routine;
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    const next = pendingRoutine;
+    pendingRoutine = null;
+    if (next) void persistSafe(next, set);
+  }, PERSIST_DEBOUNCE_MS);
+}
+
+async function flushPersist(set: (partial: Partial<StudioState>) => void) {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  const next = pendingRoutine;
+  pendingRoutine = null;
+  if (next) await persistSafe(next, set);
+}
+
 export const useStudioStore = create<StudioState>((set, get) => ({
   hydrated: false,
   current: null,
+  previous: null,
   generating: false,
   error: null,
 
@@ -59,22 +90,48 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     recoverStorageQuota();
     ensureSeedRoutine();
     const last = getLastRoutine();
-    set({ hydrated: true, current: last });
+    set({ hydrated: true, current: last, previous: null });
   },
 
   loadRoutine: async (id) => {
     recoverStorageQuota();
     const routine = await getRoutineHydrated(id);
-    if (routine) set({ current: routine, error: null });
+    if (routine) set({ current: routine, previous: null, error: null });
     return routine;
   },
 
   setCurrent: async (routine) => {
-    set({ current: routine, error: null });
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    pendingRoutine = null;
+    const { current } = get();
+    const snapshot =
+      current && current.id === routine.id ? current : null;
+    set({
+      current: routine,
+      previous: snapshot,
+      error: null,
+    });
     await persistSafe(routine, set);
   },
 
+  restorePrevious: async () => {
+    const { previous } = get();
+    if (!previous) return false;
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    pendingRoutine = null;
+    set({ current: previous, previous: null, error: null });
+    await persistSafe(previous, set);
+    return true;
+  },
+
   persist: async () => {
+    await flushPersist(set);
     const { current } = get();
     if (!current) return;
     const next = { ...current, updatedAt: new Date().toISOString() };
@@ -94,12 +151,17 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set({ current: next });
-    void persistSafe(next, set);
+    schedulePersist(next, set);
   },
 
   replaceExercise: (exerciseId, nextEx) => {
     const { current } = get();
     if (!current) return;
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    pendingRoutine = null;
     const exercises = current.exercises.map((ex) =>
       ex.id === exerciseId ? nextEx : ex,
     );
@@ -115,6 +177,11 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   reorderExercise: (exerciseId, direction) => {
     const { current } = get();
     if (!current) return;
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    pendingRoutine = null;
     const list = [...current.exercises].sort((a, b) => a.order - b.order);
     const idx = list.findIndex((ex) => ex.id === exerciseId);
     if (idx < 0) return;
@@ -133,6 +200,11 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   removeExercise: (exerciseId) => {
     const { current } = get();
     if (!current) return;
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    pendingRoutine = null;
     const list = current.exercises
       .filter((ex) => ex.id !== exerciseId)
       .sort((a, b) => a.order - b.order);

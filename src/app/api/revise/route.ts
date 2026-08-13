@@ -34,8 +34,11 @@ export async function POST(req: Request) {
       })),
     };
 
-    const routine = await reviseRoutineText(lean, changePrompt);
-    return NextResponse.json({ routine });
+    const result = await reviseRoutineText(lean, changePrompt);
+    return NextResponse.json({
+      routine: result.routine,
+      imageRegenIds: result.imageRegenIds,
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Error al aplicar los cambios.";

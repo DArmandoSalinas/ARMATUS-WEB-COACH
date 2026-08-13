@@ -1,5 +1,6 @@
 import type { Exercise, Routine, RoutineMeta } from "./types";
 import { createSeedRoutine, SEED_ROUTINE_ID } from "./seed";
+import { nanoid } from "nanoid";
 import {
   deleteImagesForRoutine,
   getImage,
@@ -340,4 +341,24 @@ export async function deleteRoutine(id: string): Promise<void> {
   if (canUseStorage() && localStorage.getItem(LAST_ID_KEY) === id) {
     localStorage.setItem(LAST_ID_KEY, SEED_ROUTINE_ID);
   }
+}
+
+/** Copy a routine (new ids) so the coach can usar esta como base. */
+export async function duplicateRoutine(source: Routine): Promise<Routine> {
+  const now = new Date().toISOString();
+  const id = nanoid(12);
+  const exercises: Exercise[] = source.exercises.map((ex, i) => ({
+    ...ex,
+    id: nanoid(10),
+    order: i,
+  }));
+  const copy: Routine = {
+    ...source,
+    id,
+    createdAt: now,
+    updatedAt: now,
+    exercises,
+  };
+  await saveRoutine(copy);
+  return copy;
 }

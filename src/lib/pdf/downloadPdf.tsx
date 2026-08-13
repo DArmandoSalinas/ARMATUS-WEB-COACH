@@ -4,7 +4,9 @@ import { pdf, Font } from "@react-pdf/renderer";
 import type { DocumentProps } from "@react-pdf/renderer";
 import type { ReactElement } from "react";
 import type { Routine } from "@/lib/types";
-import { RoutineDocument } from "./RoutineDocument";
+import { RoutineDocument, type PdfVariant } from "./RoutineDocument";
+
+export type { PdfVariant };
 
 let fontsReady: Promise<boolean> | null = null;
 
@@ -51,6 +53,8 @@ function ensureFonts(): Promise<boolean> {
         fonts: [
           { src: outfitReg, fontWeight: 400 },
           { src: outfitSemi, fontWeight: 600 },
+          { src: outfitSemi, fontWeight: 700 },
+          { src: outfitSemi, fontWeight: 800 },
         ],
       });
       return true;
@@ -109,37 +113,43 @@ async function hydrateImages(routine: Routine): Promise<Routine> {
 async function renderBlob(
   routine: Routine,
   useFallbackFonts: boolean,
+  variant: PdfVariant,
 ): Promise<Blob> {
   const doc = (
-    <RoutineDocument routine={routine} useFallbackFonts={useFallbackFonts} />
+    <RoutineDocument
+      routine={routine}
+      useFallbackFonts={useFallbackFonts}
+      variant={variant}
+    />
   ) as unknown as ReactElement<DocumentProps>;
   return pdf(doc).toBlob();
 }
 
 /**
- * Professional multi-page PDF (cover + one exercise page each).
+ * Multi-page PDF. `clara` = light background, larger type, full text.
  */
 export async function downloadRoutinePdf(
   clientName: string,
   routine: Routine,
+  variant: PdfVariant = "studio",
 ): Promise<void> {
   const customFontsOk = await ensureFonts();
   const prepared = await hydrateImages(routine);
 
   let blob: Blob;
   try {
-    blob = await renderBlob(prepared, !customFontsOk);
+    blob = await renderBlob(prepared, !customFontsOk, variant);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (!customFontsOk || !/font/i.test(msg)) throw err;
     console.warn("[pdf] Retrying with Helvetica after font error", err);
-    blob = await renderBlob(prepared, true);
+    blob = await renderBlob(prepared, true, variant);
   }
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `ARMATUS-Rutina-${slugify(clientName)}.pdf`;
+  a.download = `ARMATUS-Rutina-${slugify(clientName)}${variant === "clara" ? "-clara" : ""}.pdf`;
   document.body.appendChild(a);
   a.click();
   a.remove();

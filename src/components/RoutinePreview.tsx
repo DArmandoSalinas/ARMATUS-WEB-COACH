@@ -1,31 +1,66 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Exercise, Routine } from "@/lib/types";
-import { downloadRoutinePdf } from "@/lib/pdf/downloadPdf";
+import type { PdfVariant } from "@/lib/pdf/downloadPdf";
+import { formatDoseCard, whatsappShareUrl } from "@/lib/doseCard";
+import { fetchJson } from "@/lib/http";
+import { tx } from "@/lib/i18n";
 import { useStudioStore } from "@/lib/store";
+import { readTheme, setTheme, subscribeTheme } from "@/lib/theme";
 import { ExerciseCard } from "./ExerciseCard";
 import { HeroEnergy } from "./HeroEnergy";
 import { HeroThunder } from "./HeroThunder";
+import { LocaleToggle, useLocale } from "./LocaleToggle";
 import { Reveal } from "./Reveal";
 import { RevisionPanel } from "./RevisionPanel";
+import { ThemeToggle } from "./ThemeToggle";
 import "@/app/routine.css";
 
 type RoutinePreviewProps = {
   routine: Routine;
   editable?: boolean;
+  athleteView?: boolean;
 };
+
+function subscribeOrigin() {
+  return () => {};
+}
+
+function getOrigin() {
+  return window.location.origin;
+}
+
+function getOriginServer() {
+  return "";
+}
 
 export function RoutinePreview({
   routine,
   editable = true,
+  athleteView = false,
 }: RoutinePreviewProps) {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
+  const [dupBusy, setDupBusy] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [copyMsg, setCopyMsg] = useState<string | null>(null);
+  const router = useRouter();
+  const locale = useLocale();
+  const pageOrigin = useSyncExternalStore(
+    subscribeOrigin,
+    getOrigin,
+    getOriginServer,
+  );
   const [editMode, setEditMode] = useState(false);
   const [showChanges, setShowChanges] = useState(false);
+  const viewMode = useSyncExternalStore(
+    subscribeTheme,
+    readTheme,
+    () => "studio" as PdfVariant,
+  );
   const [busyMap, setBusyMap] = useState<
     Record<string, { text?: boolean; image?: boolean }>
   >({});
@@ -38,8 +73,15 @@ export function RoutinePreview({
   const removeExercise = useStudioStore((s) => s.removeExercise);
   const persist = useStudioStore((s) => s.persist);
   const setCurrent = useStudioStore((s) => s.setCurrent);
+  const restorePrevious = useStudioStore((s) => s.restorePrevious);
+  const hasPrevious = useStudioStore((s) => s.previous?.id === current?.id);
   const storeError = useStudioStore((s) => s.error);
   const setError = useStudioStore((s) => s.setError);
+  const [doseMsg, setDoseMsg] = useState<string | null>(null);
+
+  function setMode(mode: PdfVariant) {
+    setTheme(mode);
+  }
 
   useEffect(() => {
     if (current?.id !== routine.id) {
@@ -53,6 +95,8 @@ export function RoutinePreview({
     () => [...live.exercises].sort((a, b) => a.order - b.order),
     [live.exercises],
   );
+  const doseText = useMemo(() => formatDoseCard(live), [live]);
+  const waUrl = whatsappShareUrl(doseText);
 
   const titleWords = live.objective.trim().split(/\s+/);
   const accentFrom =
@@ -96,6 +140,60 @@ export function RoutinePreview({
     return () => observer.disconnect();
   }, [exercises]);
 
+  async function handleCopyLink() {
+    const url = `${window.location.origin}/rutina/${live.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyMsg(tx(locale, "copyOk"));
+    } catch {
+      setCopyMsg(url);
+    }
+  }
+
+  async function handleCopyAthleteLink() {
+    const url = `${window.location.origin}/rutina/${live.id}?leer=1`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyMsg(tx(locale, "copyOk"));
+    } catch {
+      setCopyMsg(url);
+    }
+  }
+
+  async function handleCopyDose() {
+    const text = formatDoseCard(live);
+    try {
+      await navigator.clipboard.writeText(text);
+      setDoseMsg(tx(locale, "doseCopied"));
+    } catch {
+      setDoseMsg(text);
+    }
+  }
+
+  async function handleUndo() {
+    const ok = await restorePrevious();
+    setDoseMsg(ok ? tx(locale, "undoOk") : tx(locale, "undoNone"));
+  }
+
+  async function handleDuplicate() {
+    if (dupBusy) return;
+    setDupBusy(true);
+    try {
+      const { duplicateRoutine } = await import("@/lib/storage");
+      const copy = await duplicateRoutine(live);
+      await setCurrent(copy);
+      router.push(`/rutina/${copy.id}`);
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : tx(locale, "dupFail"),
+      );
+    } finally {
+      setDupBusy(false);
+    }
+  }
+
   async function handleShare() {
     setShareBusy(true);
     setShareMsg(null);
@@ -105,8 +203,7 @@ export function RoutinePreview({
       const result = await publishRoutineClient(live, setShareMsg);
       if (!result.ok) {
         setShareMsg(
-          result.error ||
-            "No se pudo publicar. Revisa que Blob tenga el token read-write.",
+          result.error || tx(locale, "blobFail"),
         );
         return;
       }
@@ -131,7 +228,7 @@ export function RoutinePreview({
       setShareMsg(`Listo. Link listo para enviar:\n${url}`);
     } catch (err) {
       setShareMsg(
-        err instanceof Error ? err.message : "No se pudo compartir la rutina.",
+        err instanceof Error ? err.message : tx(locale, "shareFail"),
       );
     } finally {
       setShareBusy(false);
@@ -141,11 +238,12 @@ export function RoutinePreview({
   async function handlePdf() {
     setPdfBusy(true);
     try {
-      await downloadRoutinePdf(live.clientName, live);
+      const { downloadRoutinePdf } = await import("@/lib/pdf/downloadPdf");
+      await downloadRoutinePdf(live.clientName, live, viewMode);
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "Error desconocido";
-      alert(`No se pudo generar el PDF.\n${msg}`);
+      alert(`${tx(locale, "pdfFail")}\n${msg}`);
     } finally {
       setPdfBusy(false);
     }
@@ -154,11 +252,14 @@ export function RoutinePreview({
   async function regenText(exercise: Exercise) {
     setBusyMap((m) => ({ ...m, [exercise.id]: { ...m[exercise.id], text: true } }));
     try {
-      const res = await fetch("/api/regenerate-text", {
+      const { ok, data } = await fetchJson<{
+        error?: string;
+        exercise?: Exercise;
+      }>("/api/regenerate-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          exercise,
+          exercise: { ...exercise, imageDataUrl: undefined },
           routineContext: {
             clientName: live.clientName,
             objective: live.objective,
@@ -167,11 +268,17 @@ export function RoutinePreview({
           },
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al regenerar texto");
-      replaceExercise(exercise.id, data.exercise as Exercise);
+      if (!ok || !data.exercise) {
+        throw new Error(data.error || tx(locale, "regenTextFail"));
+      }
+      replaceExercise(exercise.id, {
+        ...data.exercise,
+        imageDataUrl: exercise.imageDataUrl,
+        id: exercise.id,
+        order: exercise.order,
+      });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al regenerar texto");
+      alert(err instanceof Error ? err.message : tx(locale, "regenTextFail"));
     } finally {
       setBusyMap((m) => ({
         ...m,
@@ -187,7 +294,12 @@ export function RoutinePreview({
     }));
     try {
       // Manual "Generar" always requests a fresh AI boceto using full coaching text
-      const res = await fetch("/api/regenerate-image", {
+      const { ok, data } = await fetchJson<{
+        error?: string;
+        imageDataUrl?: string;
+        sketchCaption?: string;
+        source?: string;
+      }>("/api/regenerate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -204,16 +316,14 @@ export function RoutinePreview({
           },
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al regenerar boceto");
+      if (!ok || !data.imageDataUrl) {
+        throw new Error(data.error || tx(locale, "regenImageFail"));
+      }
       updateExercise(exercise.id, {
-        imageDataUrl: data.imageDataUrl as string,
-        ...(data.sketchCaption
-          ? { sketchCaption: data.sketchCaption as string }
-          : {}),
+        imageDataUrl: data.imageDataUrl,
       });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al regenerar boceto");
+      alert(err instanceof Error ? err.message : tx(locale, "regenImageFail"));
     } finally {
       setBusyMap((m) => ({
         ...m,
@@ -222,10 +332,28 @@ export function RoutinePreview({
     }
   }
 
-  const canEdit = editable && editMode;
+  function toggleChanges() {
+    if (showChanges) {
+      const panel = document.getElementById("revision-panel");
+      if (panel?.getAttribute("data-busy") === "true") return;
+      const ta = panel?.querySelector("textarea");
+      if (
+        ta instanceof HTMLTextAreaElement &&
+        ta.value.trim() &&
+        !window.confirm(tx(locale, "hideDraft"))
+      ) {
+        return;
+      }
+    }
+    setShowChanges((v) => !v);
+  }
+
+  const canCoach = editable && !athleteView;
+  const canEdit = canCoach && editMode;
+  const isClara = viewMode === "clara";
 
   return (
-    <div className="routine-page">
+    <div className={`routine-page${isClara ? " is-clara" : ""}`}>
       <header className="topbar">
         <Link href="/" className="brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -241,18 +369,35 @@ export function RoutinePreview({
             <div className="brand__sub">Coach Studio</div>
           </div>
         </Link>
-        {live.coachName ? (
-          <div className="credit-pill">
-            Coach <span>{live.coachName}</span>
-          </div>
-        ) : null}
+        <div className="topbar__end">
+          {live.coachName ? (
+            <div className="credit-pill">
+              Coach <span>{live.coachName}</span>
+            </div>
+          ) : null}
+          <LocaleToggle />
+          <ThemeToggle />
+        </div>
       </header>
 
+      {athleteView ? (
+        <div className="athlete-banner no-print" role="status">
+          <span>{tx(locale, "athleteBanner")}</span>
+          <Link href={`/rutina/${live.id}`} className="btn btn--soft">
+            {tx(locale, "openCoachView")}
+          </Link>
+        </div>
+      ) : null}
+
       <section className="hero">
-        <HeroEnergy intensity="compact" className="no-print opacity-60" />
-        <HeroThunder className="no-print opacity-50" />
+        {isClara ? null : (
+          <>
+            <HeroEnergy intensity="compact" className="no-print opacity-60" />
+            <HeroThunder className="no-print opacity-50" />
+          </>
+        )}
         <div className="hero__grid motion-rise-2">
-          <div className="hero__eyebrow">Rutina para {live.clientName}</div>
+          <div className="hero__eyebrow">{tx(locale, "routineFor")} {live.clientName}</div>
           <h1 className="hero__title">
             {titleMain}
             {titleAccent ? (
@@ -271,13 +416,12 @@ export function RoutinePreview({
           ) : null}
 
           <p className="hero__lead">
-            Protocolo biomecánico con dosificación, ejecución técnica, errores
-            comunes y bocetos ARMATUS — listo para enviar al atleta.
+            {isClara ? tx(locale, "leadClara") : tx(locale, "leadStudio")}
           </p>
 
           <div className="hero__actions no-print motion-rise-4">
             <a className="btn btn--primary" href={`#ex-${exercises[0]?.id}`}>
-              Empezar rutina
+              {tx(locale, "startRoutine")}
             </a>
             <button
               type="button"
@@ -285,18 +429,24 @@ export function RoutinePreview({
               disabled={pdfBusy}
               onClick={handlePdf}
             >
-              {pdfBusy ? "Generando PDF…" : "Descargar PDF"}
+              {pdfBusy
+                ? tx(locale, "pdfBusy")
+                : isClara
+                  ? tx(locale, "pdfClara")
+                  : tx(locale, "pdfStudio")}
             </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              disabled={shareBusy}
-              onClick={handleShare}
-            >
-              {shareBusy ? "Publicando…" : "Compartir"}
-            </button>
+            {canCoach ? (
+              <button
+                type="button"
+                className="btn btn--ghost"
+                disabled={shareBusy}
+                onClick={handleShare}
+              >
+                {shareBusy ? tx(locale, "publishing") : tx(locale, "share")}
+              </button>
+            ) : null}
           </div>
-          {shareMsg ? (
+          {canCoach && shareMsg ? (
             <div
               className="no-print mt-4 rounded-[14px] border border-[rgba(255,107,53,0.35)] bg-[rgba(255,107,53,0.1)] px-4 py-3 text-sm text-[var(--text-secondary)] whitespace-pre-wrap break-all"
               role="status"
@@ -305,28 +455,113 @@ export function RoutinePreview({
             </div>
           ) : null}
 
+          {canCoach ? (
+            <div className="share-strip no-print">
+              <p className="share-strip__label">{tx(locale, "shareLabel")}</p>
+              <div className="share-strip__row">
+                <span className="share-strip__url">
+                  {pageOrigin
+                    ? `${pageOrigin}/rutina/${live.id}`
+                    : `/rutina/${live.id}`}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--soft"
+                  onClick={handleCopyLink}
+                >
+                  {tx(locale, "copyLink")}
+                </button>
+              </div>
+              <p className="share-strip__label share-strip__label--next">
+                {tx(locale, "athleteLink")}
+              </p>
+              <div className="share-strip__row">
+                <span className="share-strip__url">
+                  {pageOrigin
+                    ? `${pageOrigin}/rutina/${live.id}?leer=1`
+                    : `/rutina/${live.id}?leer=1`}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--soft"
+                  onClick={handleCopyAthleteLink}
+                >
+                  {tx(locale, "copyAthlete")}
+                </button>
+              </div>
+              <p className="share-strip__hint">
+                {copyMsg || tx(locale, "athleteHint")}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="dose-sheet">
+            <p className="share-strip__label">{tx(locale, "doseSheet")}</p>
+            <ol className="dose-sheet__list">
+              {exercises.map((ex, i) => {
+                const meta = [ex.dose.setsReps, ex.dose.rpe, ex.dose.rest]
+                  .filter(Boolean)
+                  .join(" · ");
+                return (
+                  <li key={ex.id}>
+                    <strong>
+                      {String(i + 1).padStart(2, "0")}. {ex.name}
+                    </strong>
+                    {meta ? <span>{meta}</span> : null}
+                  </li>
+                );
+              })}
+            </ol>
+            <div className="share-strip__row no-print">
+              <button
+                type="button"
+                className="btn btn--soft"
+                onClick={handleCopyDose}
+              >
+                {tx(locale, "copyDose")}
+              </button>
+              <a
+                className="btn btn--soft"
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {tx(locale, "whatsapp")}
+              </a>
+            </div>
+            {doseMsg ? (
+              <p className="share-strip__hint no-print" role="status">
+                {doseMsg}
+              </p>
+            ) : null}
+          </div>
+
           <div className="hero__meta">
             <div className="meta-chip">
               <strong>{exercises.length}</strong>
-              <span>Bloques</span>
+              <span>{tx(locale, "blocks")}</span>
             </div>
             {live.duration ? (
               <div className="meta-chip">
                 <strong>{live.duration}</strong>
-                <span>Duración</span>
+                <span>{tx(locale, "durationChip")}</span>
               </div>
             ) : null}
             {live.frequency ? (
               <div className="meta-chip">
                 <strong>{live.frequency}</strong>
-                <span>Frecuencia</span>
+                <span>{tx(locale, "frequencyChip")}</span>
               </div>
             ) : null}
             <div className="meta-chip">
-              <strong style={{ textTransform: "capitalize" }}>
-                {live.level}
+              <strong>
+                {live.level === "principiante"
+                  ? tx(locale, "levelBeg")
+                  : live.level === "avanzado"
+                    ? tx(locale, "levelAdv")
+                    : tx(locale, "levelMid")}
               </strong>
-              <span>Nivel</span>
+              <span>{tx(locale, "levelChip")}</span>
             </div>
             {live.coachName ? (
               <div className="meta-chip">
@@ -338,8 +573,8 @@ export function RoutinePreview({
         </div>
       </section>
 
-      {editable && storeError && (
-        <div className="no-print mx-auto mb-4 max-w-[1100px] rounded-[14px] border border-[rgba(255,69,58,0.35)] bg-[rgba(255,69,58,0.1)] px-4 py-3 text-sm text-[#ffb4af]">
+      {canCoach && storeError && (
+        <div className="no-print mx-auto mb-4 max-w-[1100px] alert-error">
           <div className="flex items-start justify-between gap-3">
             <span>{storeError}</span>
             <button
@@ -347,19 +582,21 @@ export function RoutinePreview({
               className="shrink-0 text-[var(--primary-soft)] underline"
               onClick={() => setError(null)}
             >
-              Cerrar
+              {tx(locale, "close")}
             </button>
           </div>
         </div>
       )}
 
-      {editable && (
+      {canCoach && (
         <div className="coach-toolbar no-print">
           <div className="coach-toolbar__inner">
             <div className="coach-toolbar__hint">
               {editMode
-                ? "Modo edición: ajusta textos, orden y bocetos."
-                : "Vista atleta: limpia para revisar y enviar."}
+                ? tx(locale, "editHint")
+                : isClara
+                  ? tx(locale, "claraHint")
+                  : tx(locale, "studioHint")}
             </div>
             <div className="coach-toolbar__actions">
               <button
@@ -367,37 +604,56 @@ export function RoutinePreview({
                 className={`btn btn--soft ${editMode ? "is-on" : ""}`}
                 onClick={() => setEditMode((v) => !v)}
               >
-                {editMode ? "Salir de edición" : "Editar"}
+                {editMode ? tx(locale, "exitEdit") : tx(locale, "edit")}
               </button>
               <button
                 type="button"
                 className={`btn btn--soft ${showChanges ? "is-on" : ""}`}
-                onClick={() => setShowChanges((v) => !v)}
+                onClick={toggleChanges}
               >
-                {showChanges ? "Ocultar cambios" : "Pedir cambios"}
+                {showChanges ? tx(locale, "hideChanges") : tx(locale, "askChanges")}
+              </button>
+              <button
+                type="button"
+                className="btn btn--soft"
+                disabled={dupBusy}
+                onClick={handleDuplicate}
+              >
+                {dupBusy ? tx(locale, "copying") : tx(locale, "useAsBase")}
+              </button>
+              <button
+                type="button"
+                className="btn btn--soft"
+                disabled={!hasPrevious}
+                onClick={handleUndo}
+              >
+                {tx(locale, "undoChange")}
               </button>
               <button type="button" className="btn btn--soft" onClick={persist}>
-                Guardar
+                {tx(locale, "save")}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {editable && showChanges && (
-        <div id="revision-panel" className="revision-slot no-print">
+      {canCoach && (
+        <div
+          hidden={!showChanges}
+          className="revision-slot no-print"
+        >
           <RevisionPanel
             routine={live}
+            onClaraView={() => setMode("clara")}
             onRevised={async (next) => {
               await setCurrent(next);
-              setShowChanges(false);
             }}
           />
         </div>
       )}
 
       <div className="ex-nav-wrap">
-        <nav className="ex-nav" aria-label="Ejercicios">
+        <nav className="ex-nav" aria-label={tx(locale, "exercisesNav")}>
           {exercises.map((ex, i) => (
             <a
               key={ex.id}
@@ -438,7 +694,7 @@ export function RoutinePreview({
 
       <footer className="footer">
         <p>
-          <strong style={{ color: "#fff" }}>ARMATUS</strong>
+          <strong>ARMATUS</strong>
           {" · "}
           Coach Studio
           {live.coachName ? ` · ${live.coachName}` : ""}
@@ -447,25 +703,41 @@ export function RoutinePreview({
         </p>
       </footer>
 
-      {editable && (
+      {canCoach && (
         <div className="studio-bar no-print">
           <div className="flex flex-wrap gap-2">
             <Link href="/crear" className="btn btn--ghost">
-              Nueva rutina
+              {tx(locale, "newRoutine")}
             </Link>
             <button
               type="button"
               className="btn btn--ghost"
               onClick={() => setEditMode((v) => !v)}
             >
-              {editMode ? "Vista limpia" : "Editar"}
+              {editMode ? tx(locale, "cleanView") : tx(locale, "edit")}
             </button>
             <button
               type="button"
               className={`btn btn--ghost ${showChanges ? "is-on" : ""}`}
-              onClick={() => setShowChanges((v) => !v)}
+              onClick={toggleChanges}
             >
-              {showChanges ? "Ocultar cambios" : "Pedir cambios"}
+              {showChanges ? tx(locale, "hideChanges") : tx(locale, "askChanges")}
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              disabled={dupBusy}
+              onClick={handleDuplicate}
+            >
+              {dupBusy ? tx(locale, "copying") : tx(locale, "useAsBase")}
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              disabled={!hasPrevious}
+              onClick={handleUndo}
+            >
+              {tx(locale, "undoChange")}
             </button>
           </div>
           <button
@@ -474,7 +746,11 @@ export function RoutinePreview({
             disabled={pdfBusy}
             onClick={handlePdf}
           >
-            {pdfBusy ? "Generando PDF…" : "Descargar PDF"}
+            {pdfBusy
+              ? tx(locale, "pdfBusy")
+              : isClara
+                ? tx(locale, "pdfClara")
+                : tx(locale, "pdfStudio")}
           </button>
         </div>
       )}

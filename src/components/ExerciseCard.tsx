@@ -1,6 +1,44 @@
 "use client";
 
-import type { Exercise } from "@/lib/types";
+import { useState } from "react";
+import { tx } from "@/lib/i18n";
+import type { Exercise, SupportLink } from "@/lib/types";
+import { useLocale } from "./LocaleToggle";
+
+function musclesToText(muscles: string[]): string {
+  return muscles.join(", ");
+}
+
+function textToMuscles(text: string): string[] {
+  return text
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+}
+
+function linksToText(links: SupportLink[] | undefined): string {
+  return (links ?? [])
+    .map((l) => (l.label ? `${l.label} | ${l.url}` : l.url))
+    .join("\n");
+}
+
+function textToLinks(text: string): SupportLink[] | undefined {
+  const lines = text.split("\n");
+  const supportLinks = lines
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const pipe = line.indexOf("|");
+      if (pipe >= 0) {
+        const label = line.slice(0, pipe).trim();
+        const url = line.slice(pipe + 1).trim();
+        return label ? { label, url } : { url };
+      }
+      return { url: line };
+    })
+    .filter((l) => /^https?:\/\//i.test(l.url));
+  return supportLinks.length ? supportLinks : undefined;
+}
 
 type ExerciseCardProps = {
   exercise: Exercise;
@@ -29,10 +67,26 @@ export function ExerciseCard({
   isFirst,
   isLast,
 }: ExerciseCardProps) {
+  const locale = useLocale();
   const doseMeta = [exercise.dose.rpe, exercise.dose.rest]
     .filter(Boolean)
     .join(" · ");
   const num = String(index + 1).padStart(2, "0");
+  const musclesJoined = musclesToText(exercise.muscles);
+  const supportJoined = linksToText(exercise.supportLinks);
+  const [draft, setDraft] = useState<{
+    id: string;
+    muscles?: string;
+    support?: string;
+  } | null>(null);
+  const musclesText =
+    draft?.id === exercise.id && draft.muscles !== undefined
+      ? draft.muscles
+      : musclesJoined;
+  const supportText =
+    draft?.id === exercise.id && draft.support !== undefined
+      ? draft.support
+      : supportJoined;
 
   return (
     <article
@@ -47,36 +101,40 @@ export function ExerciseCard({
             type="button"
             className="btn btn--soft"
             disabled={isFirst}
+            aria-label={tx(locale, "up")}
             onClick={() => onReorder?.("up")}
           >
-            Subir
+            {tx(locale, "up")}
           </button>
           <button
             type="button"
             className="btn btn--soft"
             disabled={isLast}
+            aria-label={tx(locale, "down")}
             onClick={() => onReorder?.("down")}
           >
-            Bajar
+            {tx(locale, "down")}
           </button>
           <button
             type="button"
             className="btn btn--soft"
             disabled={busy?.text}
+            aria-busy={busy?.text || undefined}
             onClick={onRegenerateText}
           >
-            {busy?.text ? "Regenerando…" : "Regenerar texto"}
+            {busy?.text ? tx(locale, "regenTextBusy") : tx(locale, "regenText")}
           </button>
           <button
             type="button"
             className="btn btn--soft"
             disabled={busy?.image}
+            aria-busy={busy?.image || undefined}
             onClick={onRegenerateImage}
           >
-            {busy?.image ? "Boceto…" : "Regenerar boceto"}
+            {busy?.image ? tx(locale, "regenImageBusy") : tx(locale, "regenImage")}
           </button>
           <button type="button" className="btn btn--danger" onClick={onRemove}>
-            Eliminar
+            {tx(locale, "remove")}
           </button>
         </div>
       )}
@@ -84,9 +142,10 @@ export function ExerciseCard({
       <div className="exercise__head">
         <div>
           {editable ? (
-            <input
+          <input
               className="field-edit exercise__badge"
               value={exercise.badge}
+              aria-label="Bloque o badge"
               onChange={(e) => onChange?.({ badge: e.target.value })}
             />
           ) : (
@@ -130,12 +189,13 @@ export function ExerciseCard({
         </div>
 
         <div className="dose">
-          <span className="dose__label">Dosificación recomendada</span>
+          <span className="dose__label">{tx(locale, "doseLabel")}</span>
           {editable ? (
             <>
               <input
                 className="field-edit dose__value"
                 value={exercise.dose.setsReps}
+                aria-label="Series y repeticiones"
                 onChange={(e) =>
                   onChange?.({
                     dose: { ...exercise.dose, setsReps: e.target.value },
@@ -144,17 +204,31 @@ export function ExerciseCard({
               />
               <input
                 className="field-edit dose__meta"
-                value={doseMeta}
-                onChange={(e) => {
-                  const parts = e.target.value.split("·").map((s) => s.trim());
+                value={exercise.dose.rpe ?? ""}
+                placeholder="RPE (opcional)"
+                aria-label="RPE"
+                onChange={(e) =>
                   onChange?.({
                     dose: {
                       ...exercise.dose,
-                      rpe: parts[0] || undefined,
-                      rest: parts[1] || undefined,
+                      rpe: e.target.value || undefined,
                     },
-                  });
-                }}
+                  })
+                }
+              />
+              <input
+                className="field-edit dose__meta"
+                value={exercise.dose.rest ?? ""}
+                placeholder="Descanso (opcional)"
+                aria-label="Descanso"
+                onChange={(e) =>
+                  onChange?.({
+                    dose: {
+                      ...exercise.dose,
+                      rest: e.target.value || undefined,
+                    },
+                  })
+                }
               />
             </>
           ) : (
@@ -177,7 +251,20 @@ export function ExerciseCard({
             decoding="async"
           />
         ) : (
-          <div className="sketch__placeholder">Boceto pendiente</div>
+          <div className="sketch__placeholder">
+            <span>{busy?.image ? tx(locale, "sketchBusy") : tx(locale, "sketchPending")}</span>
+            {onRegenerateImage ? (
+              <button
+                type="button"
+                className="btn btn--soft mt-3 no-print"
+                disabled={busy?.image}
+                aria-busy={busy?.image || undefined}
+                onClick={onRegenerateImage}
+              >
+                {busy?.image ? tx(locale, "regenImageBusy") : tx(locale, "sketchRetry")}
+              </button>
+            ) : null}
+          </div>
         )}
         <figcaption className="sketch__caption">
           Boceto · {exercise.sketchCaption}
@@ -196,8 +283,8 @@ export function ExerciseCard({
       <div className="grid-2">
         <div className="block">
           <h3 className="block__title">
-            <span className="block__icon">⚡</span>
-            Propósito y enfoque
+            <span className="block__icon" aria-hidden />
+            {tx(locale, "purpose")}
           </h3>
           {editable ? (
             <textarea
@@ -212,22 +299,28 @@ export function ExerciseCard({
         </div>
         <div className="block">
           <h3 className="block__title">
-            <span className="block__icon">◎</span>
-            Enfoque muscular
+            <span className="block__icon" aria-hidden />
+            {tx(locale, "muscles")}
           </h3>
           {editable ? (
             <textarea
               className="field-edit"
               rows={4}
-              value={exercise.muscles.join(", ")}
+              value={musclesText}
+              aria-label="Músculos, separados por coma"
               onChange={(e) =>
-                onChange?.({
-                  muscles: e.target.value
-                    .split(",")
-                    .map((m) => m.trim())
-                    .filter(Boolean),
+                setDraft({
+                  id: exercise.id,
+                  muscles: e.target.value,
+                  support: draft?.id === exercise.id ? draft.support : undefined,
                 })
               }
+              onBlur={() => {
+                onChange?.({ muscles: textToMuscles(musclesText) });
+                setDraft((d) =>
+                  d?.id === exercise.id ? { ...d, muscles: undefined } : d,
+                );
+              }}
             />
           ) : (
             <div className="tag-row">
@@ -242,10 +335,10 @@ export function ExerciseCard({
       </div>
 
       <div className="block" style={{ marginTop: 14 }}>
-        <h3 className="block__title">
-          <span className="block__icon">→</span>
-          Cómo ejecutarlo
-        </h3>
+          <h3 className="block__title">
+            <span className="block__icon" aria-hidden />
+            {tx(locale, "howTo")}
+          </h3>
         <div className="steps">
           {exercise.steps.map((step, stepIdx) => (
             <div className="step" key={`${exercise.id}-step-${stepIdx}`}>
@@ -284,31 +377,72 @@ export function ExerciseCard({
 
       <div className="split">
         <div className="warn">
-          <h4>Errores comunes</h4>
+          <h4>{tx(locale, "mistakes")}</h4>
           {editable ? (
-            <textarea
-              className="field-edit"
-              rows={4}
-              value={exercise.commonMistakes.join("\n")}
-              onChange={(e) =>
-                onChange?.({
-                  commonMistakes: e.target.value
-                    .split("\n")
-                    .map((m) => m.trim())
-                    .filter(Boolean),
-                })
-              }
-            />
+            <ul className="edit-list">
+              {(exercise.commonMistakes.length
+                ? exercise.commonMistakes
+                : [""]
+              ).map((m, i) => (
+                <li key={`${exercise.id}-err-${i}`} className="edit-list__row">
+                  <textarea
+                    className="field-edit edit-list__field"
+                    rows={3}
+                    value={m}
+                    placeholder={`Error ${i + 1}`}
+                    onChange={(e) => {
+                      const source = exercise.commonMistakes.length
+                        ? exercise.commonMistakes
+                        : [""];
+                      const next = [...source];
+                      next[i] = e.target.value;
+                      onChange?.({ commonMistakes: next });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="edit-list__remove"
+                    aria-label="Quitar error"
+                    onClick={() => {
+                      const next = exercise.commonMistakes.filter(
+                        (_, j) => j !== i,
+                      );
+                      onChange?.({
+                        commonMistakes: next.length ? next : [""],
+                      });
+                    }}
+                  >
+                    {tx(locale, "removeMistake")}
+                  </button>
+                </li>
+              ))}
+              <li className="edit-list__add">
+                <button
+                  type="button"
+                  className="btn btn--soft"
+                  onClick={() => {
+                    const current = exercise.commonMistakes.length
+                      ? exercise.commonMistakes
+                      : [""];
+                    onChange?.({
+                      commonMistakes: [...current, ""],
+                    });
+                  }}
+                >
+                  {tx(locale, "addMistake")}
+                </button>
+              </li>
+            </ul>
           ) : (
             <ul>
-              {exercise.commonMistakes.map((m) => (
-                <li key={m}>{m}</li>
+              {exercise.commonMistakes.filter(Boolean).map((m, i) => (
+                <li key={`${exercise.id}-m-${i}`}>{m}</li>
               ))}
             </ul>
           )}
         </div>
         <div className="benefit">
-          <h4>Beneficio</h4>
+          <h4>{tx(locale, "benefit")}</h4>
           {editable ? (
             <textarea
               className="field-edit"
@@ -323,36 +457,28 @@ export function ExerciseCard({
       </div>
 
       <div className="support">
-        <h4>Apoyo adicional</h4>
+        <h4>{tx(locale, "support")}</h4>
         {editable ? (
           <textarea
             className="field-edit"
             rows={3}
-            value={(exercise.supportLinks ?? [])
-              .map((l) => (l.label ? `${l.label} | ${l.url}` : l.url))
-              .join("\n")}
+            value={supportText}
+            aria-label="Enlaces de apoyo"
             placeholder={
               "Una URL por línea. Opcional: Etiqueta | https://youtube.com/..."
             }
-            onChange={(e) => {
-              const lines = e.target.value
-                .split("\n")
-                .map((line) => line.trim())
-                .filter(Boolean);
-              const supportLinks = lines
-                .map((line) => {
-                  const pipe = line.indexOf("|");
-                  if (pipe >= 0) {
-                    const label = line.slice(0, pipe).trim();
-                    const url = line.slice(pipe + 1).trim();
-                    return label ? { label, url } : { url };
-                  }
-                  return { url: line };
-                })
-                .filter((l) => /^https?:\/\//i.test(l.url));
-              onChange?.({
-                supportLinks: supportLinks.length ? supportLinks : undefined,
-              });
+            onChange={(e) =>
+              setDraft({
+                id: exercise.id,
+                support: e.target.value,
+                muscles: draft?.id === exercise.id ? draft.muscles : undefined,
+              })
+            }
+            onBlur={() => {
+              onChange?.({ supportLinks: textToLinks(supportText) });
+              setDraft((d) =>
+                d?.id === exercise.id ? { ...d, support: undefined } : d,
+              );
             }}
           />
         ) : (exercise.supportLinks ?? []).length > 0 ? (
@@ -371,7 +497,7 @@ export function ExerciseCard({
             ))}
           </ul>
         ) : (
-          <p className="support__empty">Sin enlaces de apoyo.</p>
+          <p className="support__empty">{tx(locale, "supportEmpty")}</p>
         )}
       </div>
     </article>

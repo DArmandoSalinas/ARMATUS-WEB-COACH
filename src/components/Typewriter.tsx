@@ -20,10 +20,12 @@ export function Typewriter({ lineA, lineB, className = "" }: TypewriterProps) {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
-      setA(lines[0]);
-      setB(lines[1]);
-      setPhase("done");
-      return;
+      const t = window.setTimeout(() => {
+        setA(lines[0]);
+        setB(lines[1]);
+        setPhase("done");
+      }, 0);
+      return () => window.clearTimeout(t);
     }
 
     let cancelled = false;

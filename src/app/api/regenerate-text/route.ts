@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     }
 
     const exercise = await regenerateExerciseText({
-      exercise: body.exercise,
+      exercise: { ...body.exercise, imageDataUrl: undefined },
       routineContext: body.routineContext,
     });
 
