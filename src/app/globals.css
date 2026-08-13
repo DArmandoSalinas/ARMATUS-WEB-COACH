@@ -1298,12 +1298,12 @@ select.field-edit {
 .exercise__intro {
   color: var(--text-secondary);
   margin: 0;
-  max-width: 62ch;
+  max-width: 100%;
 }
 
 .exercise__head {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 20px;
   align-items: start;
   margin-bottom: 22px;
@@ -1358,9 +1358,13 @@ select.field-edit {
 
 .sketch img {
   width: 100%;
+  max-height: 56vh;
+  height: auto;
   aspect-ratio: 3 / 2;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  background: #050505;
 }
 
 .sketch__caption {

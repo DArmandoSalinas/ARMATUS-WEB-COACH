@@ -361,7 +361,7 @@
 
 .routine-page .exercise__intro {
   color: var(--text-secondary);
-  max-width: 48rem;
+  max-width: 100%;
   font-size: 0.98rem;
   margin: 0;
 }
@@ -416,7 +416,8 @@
 .routine-page .sketch img {
   width: 100%;
   height: auto;
-  aspect-ratio: auto;
+  max-height: 56vh;
+  aspect-ratio: 3 / 2;
   object-fit: contain;
   object-position: center;
   image-rendering: -webkit-optimize-contrast;
@@ -764,8 +765,8 @@
   }
 
   .routine-page .exercise__head {
-    grid-template-columns: 1fr auto;
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
   }
 
   .routine-page .dose {

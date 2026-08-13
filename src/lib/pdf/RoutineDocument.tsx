@@ -214,9 +214,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     borderBottomColor: C.border,
   },
   exHeadMain: {
-    flexGrow: 1,
-    flexShrink: 1,
-    marginRight: 12,
+    width: "70%",
+    paddingRight: 12,
   },
   exTitle: {
     fontFamily: display,
@@ -236,7 +235,7 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
     color: C.muted,
   },
   doseBox: {
-    width: 118,
+    width: "28%",
     flexShrink: 0,
     flexDirection: "column",
     backgroundColor: clara ? "#FFFFFF" : "rgba(0,0,0,0.55)",
@@ -269,7 +268,8 @@ function createStyles(fallback: boolean, variant: PdfVariant = "studio") {
   },
   sketch: {
     width: "100%",
-    height: 168,
+    height: 236,
+    objectFit: "contain",
     backgroundColor: "#050505",
     borderWidth: 1,
     borderColor: "rgba(255,107,53,0.25)",
@@ -736,12 +736,12 @@ function ExercisePage({
       <View style={s.exHead}>
         <View style={s.exHeadMain}>
           <Text style={s.exTitle}>
-            {clip(primary, 48)}
+            {clip(primary, 72)}
             {secondary ? (
-              <Text style={s.exTitleEm}>{` (${clip(secondary, 28)})`}</Text>
+              <Text style={s.exTitleEm}>{` (${clip(secondary, 36)})`}</Text>
             ) : null}
           </Text>
-          <Text style={s.exIntro}>{clip(exercise.intro, 220)}</Text>
+          <Text style={s.exIntro}>{clip(exercise.intro, 320)}</Text>
         </View>
         <View style={s.doseBox}>
           <Text style={s.doseLabel}>{tx(locale, "pdfDose")}</Text>
@@ -762,7 +762,7 @@ function ExercisePage({
             cache={false}
           />
           <Text style={s.sketchCaption}>
-            {tx(locale, "pdfSketch")} · {clip(exercise.sketchCaption, 72)}
+            {tx(locale, "pdfSketch")} · {clip(exercise.sketchCaption, 96)}
           </Text>
         </View>
       ) : (
