@@ -86,6 +86,15 @@ export type BocetoKey =
   | 'deadbug'
   | 'wallsit'
   | 'anklecircle'
+  | 'hip90'
+  | 'glutebridge'
+  | 'catcow'
+  | 'pigeon'
+  | 'wgs'
+  | 'inchworm'
+  | 'openbook'
+  | 'invertedrow'
+  | 'latpulldown'
 
 /** Patterns where a larger technique boceto helps in the coaching guide. */
 const TECHNIQUE_HEAVY: ReadonlySet<BocetoKey> = new Set([
@@ -272,25 +281,90 @@ const RULES: BocetoRule[] = [
     ],
   },
   {
-    // Named floor drills. Generic mobility.jpg is a different stretch —
-    // never reuse it for 90/90, hip switch, pigeon, etc. → AI.
-    key: 'mobility',
-    strength: 'weak',
+    key: 'hip90',
     patterns: [
       /\b90\s*[/\-]\s*90\b/i,
       /\b90\s*90\b/i,
       /\bhip\s*switch\b/i,
       /\bcambio\s+de\s+cadera\b/i,
       /\bshin\s*box\b/i,
-      /\bhip\s*airplane\b/i,
+    ],
+  },
+  {
+    key: 'wgs',
+    patterns: [
       /\bworld'?s?\s*greatest\s*stretch\b/i,
+      /\bestiramiento\s+global\b/i,
+      /\bestiramiento\s+del\s+mundo\b/i,
+    ],
+  },
+  {
+    key: 'pigeon',
+    patterns: [
       /\bpigeon\b/i,
       /\bpaloma\b/i,
+    ],
+  },
+  {
+    key: 'catcow',
+    patterns: [
       /\bcat[\s-]?cow\b/i,
       /\bgato\s*vaca\b/i,
+    ],
+  },
+  {
+    key: 'inchworm',
+    patterns: [
+      /\binchworms?\b/i,
+      /\bgusano\b/i,
+    ],
+  },
+  {
+    key: 'openbook',
+    patterns: [
+      /\bopen\s*book\b/i,
+      /\blibro\s+abierto\b/i,
+      /\bthoracic\s*rotation\b/i,
+      /\brotaci[oó]n\s+tor[aá]cica\b/i,
+    ],
+  },
+  {
+    key: 'glutebridge',
+    patterns: [
+      /\bglute\s*bridge\b/i,
+      /\bpuente\s*(de\s*)?gl[uú]teo/i,
+      /\bpuente\s+unipodal\b/i,
+      /\bpuente\s+(a\s+)?una\s+pierna\b/i,
+      /\bsingle[- ]?leg\s+bridge\b/i,
+    ],
+  },
+  {
+    key: 'invertedrow',
+    patterns: [
+      /\binverted\s*row\b/i,
+      /\bremo\s+invertido\b/i,
+      /\baustralian\s*pull/i,
+      /\bremo\s+australiano\b/i,
+    ],
+  },
+  {
+    key: 'latpulldown',
+    patterns: [
+      /\blat\s*pull[- ]?downs?\b/i,
+      /\bjal[oó]n\s+al\s+pecho\b/i,
+      /\bjal[oó]n\s+al\s+frente\b/i,
+      /\bjal[oó]n\s+en\s+polea\b/i,
+      /\bjal[oó]n\s+de\s+espalda\b/i,
+    ],
+  },
+  {
+    // Named floor drills that still have no dedicated JPG — never reuse mobility.jpg.
+    key: 'mobility',
+    strength: 'weak',
+    patterns: [
+      /\bhip\s*airplane\b/i,
       /\bcouch\s*stretch\b/i,
       /\bthread\s*the\s*needle\b/i,
-      /\binchworm\b/i,
       /\bmovilidad\s+(de\s+)?cadera\b/i,
     ],
   },
@@ -787,6 +861,7 @@ const RULES: BocetoRule[] = [
       /\bseated\s+calf\b/i,
       /\bstanding\s+calf\b/i,
       /\bdonkey\s+calf\b/i,
+      /\bs[oó]leo\s+sentado\b/i,
       /\bcomplejo\s+de\s+tobillo\b/i,
       /\bankle\s*(complex|circuit|prep|strength)\b/i,
       /\btrabajo\s+de\s+tobillo\b/i,
@@ -803,13 +878,6 @@ const RULES: BocetoRule[] = [
     key: 'hipthrust',
     patterns: [
       /\bhip\s*thrust\b/i,
-      /\bglute\s*bridge\b/i,
-      /\bpuente\s*(de\s*)?gl[uú]teo/i,
-      /\bpuente\s+unipodal\b/i,
-      /\bpuente\s+(a\s+)?una\s+pierna\b/i,
-      /\bsingle[- ]?leg\s+bridge\b/i,
-      /\bbridge\b/i,
-      /\bpuente\b/i,
       /\bempuje\s+de\s+cadera\b/i,
     ],
   },
@@ -821,8 +889,6 @@ const RULES: BocetoRule[] = [
       /\bhiperextensi[oó]n\b/i,
       /\bextensi[oó]n\s+de\s+espalda\b/i,
       /\broman\s*chair\b/i,
-      /\bgood\s*morning\b/i,
-      /\bbuenos?\s*d[ií]as?\b/i,
     ],
   },
   {
@@ -935,9 +1001,6 @@ const RULES: BocetoRule[] = [
     patterns: [
       /\brows?\b/i,
       /\bremo\b/i,
-      /\binvertido\b/i,
-      /\binverted\s*row\b/i,
-      /\baustralian\s*pull/i,
       /\bseal\s*row\b/i,
       /\bchest[- ]?supported\b/i,
       /\bapoyado\s+en\s+(banco|pecho)\b/i,
@@ -1037,7 +1100,6 @@ const RULES: BocetoRule[] = [
     patterns: [
       /\bplank\b/i,
       /\bplancha\b/i,
-      /\bhollow\s*(hold|body|rock)?\b/i,
     ],
   },
   {
@@ -1271,6 +1333,8 @@ const LIBRARY_ASSET_REJECT: Partial<Record<BocetoKey, RegExp[]>> = {
     /\bpiernas?\s+de\s+un\s+lado\b/i,
     /\bside[\s-]?to[\s-]?side\b/i,
   ],
+  hip90: [/\bcable\b/i, /\bpolea\b/i, /\brow\b/i, /\bremo\b/i, /\bbarra\b/i],
+  latpulldown: [/\bpull[- ]?ups?\b/i, /\bchin[- ]?ups?\b/i, /\bdominadas?\b/i],
   curl: [/\bm[aá]quina\b/i, /\bcable\b/i, /\bpolea\b/i],
   lateral: [/\bcable\b/i, /\bpolea\b/i, /\bm[aá]quina\b/i],
 };
@@ -1455,4 +1519,13 @@ export const BOCETO_LABELS: Record<BocetoKey, { en: string; es: string }> = {
   deadbug: { en: 'Dead bug', es: 'Bicho muerto' },
   wallsit: { en: 'Wall sit', es: 'Sentadilla en pared' },
   anklecircle: { en: 'Ankle circles', es: 'Círculos de tobillo' },
+  hip90: { en: '90/90 hip switch', es: 'Cambio de cadera 90/90' },
+  glutebridge: { en: 'Glute bridge', es: 'Puente de glúteos' },
+  catcow: { en: 'Cat-cow', es: 'Gato-vaca' },
+  pigeon: { en: 'Pigeon stretch', es: 'Paloma' },
+  wgs: { en: "World's greatest stretch", es: 'Estiramiento global' },
+  inchworm: { en: 'Inchworm', es: 'Gusano' },
+  openbook: { en: 'Open book', es: 'Libro abierto' },
+  invertedrow: { en: 'Inverted row', es: 'Remo invertido' },
+  latpulldown: { en: 'Lat pulldown', es: 'Jalón al pecho' },
 };
