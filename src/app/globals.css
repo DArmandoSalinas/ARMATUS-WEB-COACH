@@ -1801,7 +1801,25 @@ html[data-theme="clara"] .ambient__vignette {
 }
 
 html[data-theme="clara"] .hero-thunder {
-  display: none;
+  opacity: 0.78;
+}
+
+html[data-theme="clara"] .thunder-strike-flash {
+  background: linear-gradient(
+    118deg,
+    transparent 20%,
+    rgba(210, 74, 22, 0.14) 40%,
+    rgba(210, 74, 22, 0.32) 50%,
+    rgba(210, 74, 22, 0.12) 60%,
+    transparent 78%
+  );
+}
+
+html[data-theme="clara"] .thunder-spark {
+  background: #d24a16;
+  box-shadow:
+    0 0 12px #d24a16,
+    0 0 24px rgba(210, 74, 22, 0.55);
 }
 
 html[data-theme="clara"] .hero-energy {

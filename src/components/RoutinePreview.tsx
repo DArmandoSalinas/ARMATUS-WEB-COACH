@@ -464,7 +464,9 @@ export function RoutinePreview({
       ) : null}
 
       <section className="hero">
-        {isClara ? null : (
+        {isClara ? (
+          <HeroThunder className="no-print opacity-55" />
+        ) : (
           <>
             <HeroEnergy intensity="compact" className="no-print opacity-60" />
             <HeroThunder className="no-print opacity-50" />
